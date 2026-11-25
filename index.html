@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dünya Saatı">
-<title>Dünya Saatı — Canlı Yer Kürəsi</title>
+<meta name="apple-mobile-web-app-title" content="LiveE">
+<title>LiveE — Canlı Dünya Saatı</title>
 <meta name="theme-color" content="#03050c">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -134,11 +134,17 @@ footer{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:fl
 .chip b i{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
 .chip.n b i{background:var(--amber);box-shadow:0 0 6px var(--amber)}
 .chip span{font:700 16px var(--mono);letter-spacing:-.3px}
-.ctrls{display:flex;gap:6px;padding:6px;border-radius:16px}
-.ib{width:44px;height:44px;border-radius:11px;border:1px solid transparent;background:none;color:#c9d4ee;cursor:pointer;display:grid;place-items:center;position:relative;transition:all .2s}
+.chip .cr{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+.chip{padding-right:18px;flex:none}
+#favs{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.chip{scroll-snap-align:start}
+.ctrls{display:flex;gap:4px;padding:6px;border-radius:16px}
+.ib{min-width:56px;height:56px;padding:4px 6px;border-radius:11px;border:1px solid transparent;background:none;color:#c9d4ee;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;transition:all .2s}
+.ib em{font:600 11px Inter,sans-serif;font-style:normal;white-space:nowrap;letter-spacing:.1px}
 .ib:hover{background:rgba(255,255,255,.08);color:#fff}
 .ib.on{background:rgba(111,214,255,.14);border-color:rgba(111,214,255,.35);color:var(--cyan)}
-.ib[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:52px;left:50%;transform:translateX(-50%);white-space:nowrap;
+.ib[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;
   background:var(--glass2);border:1px solid var(--line);padding:5px 9px;border-radius:8px;font:500 11.5px Inter;color:#fff}
 
 #hint{position:fixed;left:22px;bottom:24px;font-size:12px;color:#94a1c2;line-height:1.7;z-index:5}
@@ -165,7 +171,7 @@ body.sim #tLbl,body.sim #nowLbl{color:var(--amber)}
   background:linear-gradient(90deg,rgba(111,214,255,.15),rgba(111,214,255,.55) 50%,rgba(255,184,77,.15))}
 #tRange::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
 #tRange::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
-.ib.sm{width:38px;height:38px}
+.ib.sm{min-width:38px;width:38px;height:38px;padding:0}
 .btn.sm{height:34px;padding:0 12px;font-size:12px}
 /* panel əlavələri */
 #pYou{font:500 12px var(--mono);color:var(--mut);margin-top:3px}
@@ -242,10 +248,10 @@ body.measuring #stage canvas{cursor:crosshair}
   .now{display:none}
   footer{left:12px;right:12px;transform:none;bottom:calc(10px + env(safe-area-inset-bottom));flex-direction:column;align-items:stretch;gap:8px;max-width:none}
   #favs{padding:4px}
-  .ctrls{justify-content:space-between}
-  .ib{width:42px;height:42px}
+  .ctrls{justify-content:space-between;gap:2px;padding:4px}
+  .ctrls .ib{flex:1;min-width:0;height:54px;padding:4px 2px}
   .ib[data-tip]:hover::after{display:none}
-  #timebar{left:12px;right:12px;width:auto;transform:none;bottom:calc(140px + env(safe-area-inset-bottom))}
+  #timebar{left:12px;right:12px;width:auto;transform:none;bottom:calc(150px + env(safe-area-inset-bottom))}
   #panel{left:10px;right:10px;width:auto;top:auto;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateY(40px);max-height:62vh;z-index:20;padding:16px}
   #panel.show{transform:none}
   #pName{font-size:22px}
@@ -255,9 +261,10 @@ body.measuring #stage canvas{cursor:crosshair}
   #route{top:128px;min-width:0;width:calc(100vw - 24px)}
   #toasts{top:120px;width:calc(100vw - 24px)}
   #hint{display:none}
-  .chip{min-width:70px;padding:6px 10px}
+  .chip{min-width:0;padding:6px 10px}
   .chip span{font-size:15px}
-  .chip .rm{opacity:.6}
+  .chip .rm{display:none}
+  #alarmsModal{bottom:calc(215px + env(safe-area-inset-bottom))}
   .lbl{font-size:11px}
 }
 </style>
@@ -276,7 +283,7 @@ body.measuring #stage canvas{cursor:crosshair}
   <div class="brand">
     <div class="logo"></div>
     <div>
-      <h1>Dünya Saatı</h1>
+      <h1>LiveE</h1>
       <p><span class="live"></span> Canlı gecə–gündüz xəritəsi</p>
     </div>
   </div>
@@ -355,23 +362,29 @@ body.measuring #stage canvas{cursor:crosshair}
 <footer>
   <div id="favs" class="glass"></div>
   <div class="ctrls glass">
-    <button class="ib" id="bHome" data-tip="Geri qayıt (Esc)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+    <button class="ib" id="bHome" data-tip="Kürəni ilk görünüşə qaytar (Esc)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
+      <em>Başa</em>
     </button>
-    <button class="ib on" id="bRot" data-tip="Avto fırlanma">
+    <button class="ib on" id="bRot" data-tip="Kürə özü yavaş fırlansın">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+      <em>Fırlanma</em>
     </button>
-    <button class="ib on" id="bLbl" data-tip="Şəhər adları">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+    <button class="ib on" id="bLbl" data-tip="Şəhər adlarını göstər / gizlət">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
+      <em>Adlar</em>
     </button>
-    <button class="ib on" id="bIss" data-tip="Kosmik stansiya (ISS)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M2 8l5 2M2 16l5-2M22 8l-5 2M22 16l-5-2M12 2v7M12 15v7"/></svg>
+    <button class="ib on" id="bIss" data-tip="Beynəlxalq Kosmik Stansiyanı göstər">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="9" width="4" height="6" rx="1"/><rect x="2" y="8" width="6" height="8" rx="1"/><rect x="16" y="8" width="6" height="8" rx="1"/><path d="M8 12h2M14 12h2M12 9V5M12 19v-4"/></svg>
+      <em>ISS</em>
     </button>
-    <button class="ib on" id="bAur" data-tip="Qütb parıltısı">
+    <button class="ib on" id="bAur" data-tip="Qütb parıltısını (aurora) göstər">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-8 6-12 9-12s6 4 9 12"/><path d="M7 18c1.5-4 3-6 5-6s3.5 2 5 6"/></svg>
+      <em>Aurora</em>
     </button>
-    <button class="ib" id="bAlarm" data-tip="Xatırlatmalar">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3"/></svg>
+    <button class="ib" id="bAlarm" data-tip="Qurulmuş xatırlatmalar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <em>Xatırlat</em>
       <span class="badge" id="alBadge">0</span>
     </button>
   </div>
@@ -1041,7 +1054,7 @@ function renderFavs() {
     const b = document.createElement('button');
     b.className = 'chip' + (c === selected ? ' sel' : '');
     const w = c.wxShort ? `<span class="wxs">${c.wxShort.ic} ${c.wxShort.t}°</span>` : '';
-    b.innerHTML = `<b><i></i>${c.name}${w}</b><span class="ct">--:--</span><u class="rm" title="Sevimlilərdən çıxar">×</u>`;
+    b.innerHTML = `<b><i></i>${c.name}</b><div class="cr"><span class="ct">--:--</span>${w}</div><u class="rm" title="Sevimlilərdən çıxar">×</u>`;
     b.onclick = e => {
       if (e.target.classList.contains('rm')) { e.stopPropagation(); toggleFav(c); return; }
       selectCity(c);
@@ -1585,7 +1598,7 @@ function checkAlarms() {
       a.last = key; changed = true;
       const msg = `⏰ ${c.name}: ${pad(a.h)}:${pad(a.m)}${a.label ? ' — ' + a.label : ''}`;
       toast(msg, 12000, 'alarm'); beep();
-      try { if ('Notification' in window && Notification.permission === 'granted') new Notification('Dünya Saatı', { body: msg, icon: 'icon.svg' }); } catch {}
+      try { if ('Notification' in window && Notification.permission === 'granted') new Notification('LiveE', { body: msg, icon: 'icon.svg' }); } catch {}
       navigator.vibrate?.([300, 150, 300]);
     }
   }

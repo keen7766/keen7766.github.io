@@ -1,5 +1,5 @@
-// Dünya Saatı — oflayn işləmə üçün service worker
-const CACHE = 'dunya-saati-v2';
+// LiveE — oflayn işləmə üçün service worker
+const CACHE = 'livee-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 // Canlı məlumat verən xidmətlər keşlənmir (həmişə internetdən)
 const LIVE = /open-meteo\.com|wheretheiss\.at|swpc\.noaa\.gov/;
