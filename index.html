@@ -1,0 +1,1666 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dünya Saatı">
+<title>Dünya Saatı — Canlı Yer Kürəsi</title>
+<meta name="theme-color" content="#03050c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --glass:rgba(9,14,28,.58);
+  --glass2:rgba(14,22,42,.72);
+  --line:rgba(255,255,255,.09);
+  --line2:rgba(255,255,255,.18);
+  --txt:#eaf0ff;
+  --mut:#8794b4;
+  --amber:#ffb84d;
+  --cyan:#6fd6ff;
+  --tw:#ff8a5c;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  background:radial-gradient(ellipse at 70% 30%,#0a1430 0%,#040814 45%,#010207 100%);
+  color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+  -webkit-font-smoothing:antialiased;user-select:none;
+}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;cursor:grab}
+#stage canvas:active{cursor:grabbing}
+.glass{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+
+/* ---------- labels ---------- */
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;height:22px;display:flex;align-items:center;gap:6px;padding:0 9px 0 7px;
+  border-radius:11px;background:rgba(5,9,20,.66);border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:500;
+  white-space:nowrap;opacity:0;pointer-events:none;cursor:pointer;will-change:transform,opacity;color:#e8eefc;
+  transition:background .2s,border-color .2s}
+.lbl.on{pointer-events:auto}
+.lbl:hover{background:rgba(22,34,64,.95);border-color:rgba(255,255,255,.3);z-index:5}
+.lbl i{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);flex:none}
+.lbl.n i{background:var(--amber);box-shadow:0 0 9px var(--amber)}
+.lbl.tw i{background:var(--tw);box-shadow:0 0 9px var(--tw)}
+.lbl b{font-weight:600;letter-spacing:.1px}
+.lbl span{font-family:var(--mono);color:#9fb0d4;font-size:11px}
+.lbl.sel{background:rgba(255,184,77,.2);border-color:rgba(255,184,77,.7);z-index:6}
+.lbl.sel span{color:#ffe1b0}
+
+/* ---------- header ---------- */
+.top{position:fixed;left:22px;top:20px;display:flex;flex-direction:column;gap:14px;z-index:10;width:340px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:50%;flex:none;position:relative;
+  background:radial-gradient(circle at 35% 35%,#9fe4ff 0%,#2b7fd0 38%,#0b2350 70%);
+  box-shadow:0 0 24px rgba(111,214,255,.45),inset -10px -4px 14px rgba(0,0,0,.75)}
+.logo::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(115deg,transparent 52%,rgba(2,4,12,.85) 60%)}
+.brand h1{font-size:19px;font-weight:800;letter-spacing:-.3px;color:#f4f7ff}
+.brand p{font-size:11.5px;color:var(--mut);margin-top:1px;display:flex;align-items:center;gap:6px}
+.live{width:7px;height:7px;border-radius:50%;background:#45e39a;box-shadow:0 0 10px #45e39a;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+
+.search{position:relative}
+.search .box{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border-radius:14px}
+.search svg{flex:none;opacity:.7}
+.search input{flex:1;background:none;border:0;outline:0;color:var(--txt);font:500 14px Inter,sans-serif}
+.search input::placeholder{color:#6f7c9c}
+.kbd{font:500 11px var(--mono);color:var(--mut);border:1px solid var(--line2);border-radius:6px;padding:1px 6px}
+.search .box:focus-within{border-color:rgba(111,214,255,.45);box-shadow:0 0 0 4px rgba(111,214,255,.08),0 10px 40px rgba(0,0,0,.45)}
+#results{position:absolute;left:0;right:0;top:52px;border-radius:14px;padding:6px;display:none;max-height:60vh;overflow:auto}
+#results.show{display:block}
+.res{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer}
+.res.act,.res:hover{background:rgba(111,214,255,.1)}
+.res .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(111,214,255,.12);color:var(--cyan);font-size:14px;flex:none}
+.res.n .ic{background:rgba(255,184,77,.12);color:var(--amber)}
+.res .nm{flex:1;min-width:0}
+.res .nm b{display:block;font-size:13.5px;font-weight:600}
+.res .nm small{color:var(--mut);font-size:11.5px}
+.res .tm{font:600 14px var(--mono)}
+.res-h{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut);padding:6px 10px 4px}
+.empty{padding:14px;color:var(--mut);font-size:13px;text-align:center}
+
+/* ---------- top-right clock ---------- */
+.now{position:fixed;right:22px;top:20px;border-radius:16px;padding:12px 18px;text-align:right;z-index:10}
+.now small{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mut)}
+#localTime{font:700 28px var(--mono);letter-spacing:-.5px;line-height:1.15}
+#localDate{font-size:12px;color:#b8c4e0}
+#utc{font:500 11.5px var(--mono);color:var(--mut);margin-top:4px}
+
+/* ---------- city panel ---------- */
+#panel{position:fixed;right:22px;top:20px;width:340px;border-radius:20px;padding:20px;z-index:10;max-height:calc(100vh - 180px);overflow-y:auto;scrollbar-width:thin;
+  transform:translateX(30px);opacity:0;pointer-events:none;transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .35s}
+#panel.show{transform:none;opacity:1;pointer-events:auto}
+#panel .x{position:absolute;right:12px;top:12px;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--mut);font-size:18px;cursor:pointer}
+#panel .x:hover{color:#fff;background:rgba(255,255,255,.1)}
+#pName{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;padding-right:30px}
+#pCountry{color:var(--mut);font-size:13px;margin-top:3px}
+.clockrow{display:flex;align-items:center;gap:16px;margin:16px 0 14px}
+#analog{width:86px;height:86px;flex:none;filter:drop-shadow(0 0 14px rgba(111,214,255,.18))}
+#panel.night #analog{filter:drop-shadow(0 0 14px rgba(255,184,77,.22))}
+#pTime{font:700 34px var(--mono);letter-spacing:-1px;line-height:1}
+#pTime em{font-style:normal;font-size:20px;color:var(--mut)}
+#pDate{font-size:12.5px;color:#b8c4e0;margin-top:6px}
+.state{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;margin-top:8px;
+  background:rgba(111,214,255,.12);color:var(--cyan);border:1px solid rgba(111,214,255,.25)}
+.state.n{background:rgba(255,184,77,.12);color:var(--amber);border-color:rgba(255,184,77,.3)}
+.state.tw{background:rgba(255,138,92,.12);color:var(--tw);border-color:rgba(255,138,92,.3)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid div{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.grid label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:3px}
+.grid b{font:600 14px var(--mono)}
+#pCoord{font:500 11px var(--mono);color:var(--mut);margin:12px 2px 14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);
+  background:rgba(255,255,255,.05);color:var(--txt);font:600 13px Inter,sans-serif;cursor:pointer;transition:all .2s}
+.btn:hover{background:rgba(255,255,255,.12)}
+.btn.primary{width:100%;background:linear-gradient(135deg,rgba(111,214,255,.22),rgba(80,120,255,.18));border-color:rgba(111,214,255,.4)}
+.btn.primary:hover{background:linear-gradient(135deg,rgba(111,214,255,.35),rgba(80,120,255,.3))}
+
+/* ---------- footer ---------- */
+footer{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:10;max-width:calc(100vw - 30px)}
+#favs{display:flex;gap:6px;padding:6px;border-radius:16px;overflow-x:auto;scrollbar-width:none}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 12px;border-radius:11px;border:1px solid transparent;background:none;color:var(--txt);cursor:pointer;min-width:84px;transition:all .2s}
+.chip:hover{background:rgba(255,255,255,.07);border-color:var(--line)}
+.chip.sel{background:rgba(255,184,77,.13);border-color:rgba(255,184,77,.45)}
+.chip b{font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chip b i{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.chip.n b i{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.chip span{font:700 16px var(--mono);letter-spacing:-.3px}
+.ctrls{display:flex;gap:6px;padding:6px;border-radius:16px}
+.ib{width:44px;height:44px;border-radius:11px;border:1px solid transparent;background:none;color:#c9d4ee;cursor:pointer;display:grid;place-items:center;position:relative;transition:all .2s}
+.ib:hover{background:rgba(255,255,255,.08);color:#fff}
+.ib.on{background:rgba(111,214,255,.14);border-color:rgba(111,214,255,.35);color:var(--cyan)}
+.ib[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:52px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  background:var(--glass2);border:1px solid var(--line);padding:5px 9px;border-radius:8px;font:500 11.5px Inter;color:#fff}
+
+#hint{position:fixed;left:22px;bottom:24px;font-size:12px;color:#94a1c2;line-height:1.7;z-index:5}
+#hint b{color:#a8b5d4;font-weight:600}
+
+/* ---------- loader ---------- */
+#loader{position:fixed;inset:0;display:grid;place-items:center;z-index:50;background:#02040a;transition:opacity .8s}
+#loader.hide{opacity:0;pointer-events:none}
+#loader .in{text-align:center}
+#loader .orb{width:74px;height:74px;margin:0 auto 18px;border-radius:50%;border:2px solid rgba(111,214,255,.15);border-top-color:var(--cyan);animation:spin 1s linear infinite;box-shadow:0 0 30px rgba(111,214,255,.15)}
+#loader p{color:var(--mut);font-size:13px;letter-spacing:.3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- yeni: vaxt maşını ---------- */
+.now{transition:opacity .3s}
+body.panel-open .now{opacity:0;pointer-events:none}
+#timebar{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);width:min(580px,calc(100vw - 30px));display:flex;align-items:center;gap:12px;padding:8px 10px 8px 8px;border-radius:16px;z-index:10}
+.tb-mid{flex:1;min-width:0}
+.tb-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.tb-l{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut)}
+#tLbl{font:600 12px var(--mono);color:#cfd9f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.sim #tLbl,body.sim #nowLbl{color:var(--amber)}
+#tRange{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;outline:none;cursor:pointer;
+  background:linear-gradient(90deg,rgba(111,214,255,.15),rgba(111,214,255,.55) 50%,rgba(255,184,77,.15))}
+#tRange::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
+#tRange::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
+.ib.sm{width:38px;height:38px}
+.btn.sm{height:34px;padding:0 12px;font-size:12px}
+/* panel əlavələri */
+#pYou{font:500 12px var(--mono);color:var(--mut);margin-top:3px}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.act{height:36px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#dbe4fa;font:600 12px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+.act:hover{background:rgba(255,255,255,.1)}
+.act.on{background:rgba(255,184,77,.15);border-color:rgba(255,184,77,.5);color:var(--amber)}
+.alform{display:none;gap:6px;margin-top:8px}
+.alform.show{display:flex}
+.alform input{height:36px;border-radius:10px;border:1px solid var(--line2);background:rgba(0,0,0,.25);color:var(--txt);padding:0 10px;font:500 13px Inter,sans-serif;min-width:0;outline:none}
+.alform input[type=time]{width:104px;font-family:var(--mono);color-scheme:dark}
+.alform input[type=text]{flex:1}
+.alform .btn{height:36px;padding:0 12px}
+.wx{margin-top:12px}
+.wx-load{font-size:12px;color:var(--mut);padding:10px 2px}
+.wx-now{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.wx-ic{font-size:30px;line-height:1}
+.wx-t{font:700 22px var(--mono)}
+.wx-d{font-size:12px;color:#b8c4e0}
+.wx-meta{margin-left:auto;text-align:right;font-size:11px;color:var(--mut);line-height:1.55}
+.wx-days{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.wd{display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid var(--line);font-size:12px}
+.wd small{color:var(--mut);font-size:11px;min-width:26px}
+.wd b{font-family:var(--mono)}
+.wd em{font-style:normal;color:var(--mut);font-family:var(--mono)}
+/* sevimli çiplər */
+.chip{position:relative}
+.chip .wxs{font:500 11px Inter,sans-serif;color:var(--mut);letter-spacing:0;margin-left:2px}
+.chip .rm{position:absolute;top:1px;right:5px;font-size:14px;color:var(--mut);opacity:0;text-decoration:none;transition:opacity .2s}
+.chip:hover .rm{opacity:1}
+.chip .rm:hover{color:#fff}
+/* marşrut */
+#route{position:fixed;left:50%;top:20px;transform:translate(-50%,-20px);opacity:0;pointer-events:none;border-radius:16px;padding:12px 16px;z-index:11;transition:all .35s;min-width:320px}
+#route.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.rt-h{display:flex;align-items:center;gap:10px;font-size:15px;padding-right:28px}
+.rt-h span{color:var(--amber)}
+.rt-grid{display:flex;gap:18px;margin-top:8px}
+.rt-grid label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+.rt-grid b{font:600 14px var(--mono)}
+#route .x,#alarmsModal .x{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer;font-size:15px}
+body.measuring #stage canvas{cursor:crosshair}
+/* ay və aurora */
+.now-ext{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+#moonCv{width:28px;height:28px}
+#moonTxt,#kpTxt{font-size:11.5px;color:#b8c4e0;text-align:right;line-height:1.5}
+#kpTxt b{color:#6dffae;font-weight:600}
+/* bildirişlər */
+#toasts{position:fixed;top:84px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:60;pointer-events:none;align-items:center}
+.toast{padding:10px 16px;border-radius:12px;font-size:13px;font-weight:500;animation:tin .35s ease;max-width:90vw}
+.toast.alarm{border-color:rgba(255,184,77,.6);font-size:15px;padding:14px 20px;background:rgba(40,28,10,.85)}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
+/* xatırlatmalar */
+#alarmsModal{position:fixed;right:22px;bottom:160px;width:330px;border-radius:16px;padding:16px;z-index:12;display:none;max-height:50vh;overflow:auto}
+#alarmsModal.show{display:block}
+#alarmsModal h3{font-size:15px;margin-bottom:10px}
+.al{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);margin-bottom:6px}
+.al b{font:700 15px var(--mono)}
+.al div{flex:1;min-width:0;font-size:12.5px}
+.al small{color:var(--mut);display:block;font-size:11.5px}
+.al button{border:0;background:none;color:var(--mut);font-size:18px;cursor:pointer}
+.al button:hover{color:#fff}
+.mut{font-size:12px;color:var(--mut)}
+.badge{position:absolute;top:3px;right:3px;min-width:17px;height:17px;border-radius:9px;background:var(--amber);color:#1a1205;font:700 11px Inter,sans-serif;display:none;place-items:center;padding:0 4px}
+.lbl.iss{background:rgba(14,34,52,.85);border-color:rgba(160,230,255,.5)}
+.lbl.iss i{background:#fff;box-shadow:0 0 10px #9ef}
+
+@media (max-width:1280px){ #hint{display:none} }
+@media (max-width:860px){
+  /* telefon görünüşü */
+  .top{left:12px;top:calc(10px + env(safe-area-inset-top));width:calc(100vw - 24px);gap:10px}
+  .brand h1{font-size:17px}
+  .logo{width:34px;height:34px}
+  .search .box{height:44px}
+  .now{display:none}
+  footer{left:12px;right:12px;transform:none;bottom:calc(10px + env(safe-area-inset-bottom));flex-direction:column;align-items:stretch;gap:8px;max-width:none}
+  #favs{padding:4px}
+  .ctrls{justify-content:space-between}
+  .ib{width:42px;height:42px}
+  .ib[data-tip]:hover::after{display:none}
+  #timebar{left:12px;right:12px;width:auto;transform:none;bottom:calc(140px + env(safe-area-inset-bottom))}
+  #panel{left:10px;right:10px;width:auto;top:auto;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateY(40px);max-height:62vh;z-index:20;padding:16px}
+  #panel.show{transform:none}
+  #pName{font-size:22px}
+  #pTime{font-size:30px}
+  #analog{width:72px;height:72px}
+  #alarmsModal{left:12px;right:12px;width:auto;bottom:calc(200px + env(safe-area-inset-bottom))}
+  #route{top:128px;min-width:0;width:calc(100vw - 24px)}
+  #toasts{top:120px;width:calc(100vw - 24px)}
+  #hint{display:none}
+  .chip{min-width:70px;padding:6px 10px}
+  .chip span{font-size:15px}
+  .chip .rm{opacity:.6}
+  .lbl{font-size:11px}
+}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <h1>Dünya Saatı</h1>
+      <p><span class="live"></span> Canlı gecə–gündüz xəritəsi</p>
+    </div>
+  </div>
+  <div class="search">
+    <div class="box glass">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="Şəhər axtar…" autocomplete="off" spellcheck="false">
+      <span class="kbd">/</span>
+    </div>
+    <div id="results" class="glass"></div>
+  </div>
+</header>
+
+<div class="now glass">
+  <small id="nowLbl">Sizin vaxt</small>
+  <div id="localTime">--:--:--</div>
+  <div id="localDate"></div>
+  <div id="utc">UTC --:--</div>
+  <div class="now-ext">
+    <div><div id="moonTxt"></div><div id="kpTxt"></div></div>
+    <canvas id="moonCv" width="56" height="56"></canvas>
+  </div>
+</div>
+
+<aside id="panel" class="glass">
+  <button class="x" id="pClose" title="Bağla">×</button>
+  <h2 id="pName"></h2>
+  <p id="pCountry"></p>
+  <div class="clockrow">
+    <svg id="analog" viewBox="0 0 100 100"></svg>
+    <div>
+      <div id="pTime"></div>
+      <div id="pDate"></div>
+      <div id="pYou"></div>
+      <div id="pState" class="state"></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div><label>UTC</label><b id="pOff"></b></div>
+    <div><label>Sizdən fərq</label><b id="pDiff"></b></div>
+    <div><label>Gün çıxır</label><b id="pRise"></b></div>
+    <div><label>Gün batır</label><b id="pSet"></b></div>
+  </div>
+  <div class="acts">
+    <button class="act" id="aFav">★ <span>Sevimli</span></button>
+    <button class="act" id="aDist">✈ <span>Məsafə</span></button>
+    <button class="act" id="aAlarm">⏰ <span>Xatırlat</span></button>
+  </div>
+  <div class="alform" id="alForm">
+    <input type="time" id="alTime">
+    <input type="text" id="alLabel" placeholder="Qeyd (məs. zəng et)" maxlength="60">
+    <button class="btn" id="alSave">Saxla</button>
+  </div>
+  <div id="pWx" class="wx"></div>
+  <div id="pCoord"></div>
+  <button class="btn primary" id="pBack">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+    Geri qayıt
+  </button>
+</aside>
+
+<div id="hint">
+  <b>Sürüşdür</b> — fırlat &nbsp;·&nbsp; <b>Təkər / iki barmaq</b> — zoom<br>
+  <b>Şəhərə klik</b> — yaxınlaş &nbsp;·&nbsp; <b>İki klik</b> — o nöqtəyə uç &nbsp;·&nbsp; <b>Esc</b> — geri
+</div>
+
+<div id="timebar" class="glass">
+  <button class="ib sm" id="tPlay" data-tip="Vaxtı oynat"></button>
+  <div class="tb-mid">
+    <div class="tb-top"><span class="tb-l">Vaxt maşını</span><span id="tLbl">İndi · canlı</span></div>
+    <input type="range" id="tRange" min="-48" max="48" step="0.25" value="0" aria-label="Vaxt maşını">
+  </div>
+  <button class="btn sm" id="tNow">İndi</button>
+</div>
+
+<footer>
+  <div id="favs" class="glass"></div>
+  <div class="ctrls glass">
+    <button class="ib" id="bHome" data-tip="Geri qayıt (Esc)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+    </button>
+    <button class="ib on" id="bRot" data-tip="Avto fırlanma">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
+    </button>
+    <button class="ib on" id="bLbl" data-tip="Şəhər adları">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+    </button>
+    <button class="ib on" id="bIss" data-tip="Kosmik stansiya (ISS)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M2 8l5 2M2 16l5-2M22 8l-5 2M22 16l-5-2M12 2v7M12 15v7"/></svg>
+    </button>
+    <button class="ib on" id="bAur" data-tip="Qütb parıltısı">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-8 6-12 9-12s6 4 9 12"/><path d="M7 18c1.5-4 3-6 5-6s3.5 2 5 6"/></svg>
+    </button>
+    <button class="ib" id="bAlarm" data-tip="Xatırlatmalar">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3"/></svg>
+      <span class="badge" id="alBadge">0</span>
+    </button>
+  </div>
+</footer>
+
+<div id="route" class="glass">
+  <button class="x" id="rClose" title="Bağla">×</button>
+  <div class="rt-h"><b id="rA"></b><span>✈</span><b id="rB"></b></div>
+  <div class="rt-grid">
+    <div><label>Məsafə</label><b id="rKm"></b></div>
+    <div><label>Uçuş (təxmini)</label><b id="rFly"></b></div>
+    <div><label>Saat fərqi</label><b id="rDiff"></b></div>
+  </div>
+</div>
+
+<div id="alarmsModal" class="glass">
+  <button class="x" id="alClose" title="Bağla">×</button>
+  <h3>⏰ Xatırlatmalar</h3>
+  <div id="alList"></div>
+  <p class="mut">Yenisini əlavə etmək üçün şəhəri açıb “Xatırlat” düyməsini basın.</p>
+</div>
+
+<div id="toasts"></div>
+
+<div id="loader"><div class="in"><div class="orb"></div><p id="ldTxt">Yer kürəsi yüklənir…</p></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =========================================================
+   ŞƏHƏRLƏR  [ad, ingiliscə, ölkə, enlik, uzunluq, saat qurşağı, dərəcə]
+   ========================================================= */
+const RAW = [
+  // --- Amerika ---
+  ['Nyu-York','New York','ABŞ',40.7128,-74.006,'America/New_York',1],
+  ['Los-Anceles','Los Angeles','ABŞ',34.0522,-118.2437,'America/Los_Angeles',1],
+  ['Çikaqo','Chicago','ABŞ',41.8781,-87.6298,'America/Chicago',1],
+  ['Hyuston','Houston','ABŞ',29.7604,-95.3698,'America/Chicago',2],
+  ['Mayami','Miami','ABŞ',25.7617,-80.1918,'America/New_York',2],
+  ['San-Fransisko','San Francisco','ABŞ',37.7749,-122.4194,'America/Los_Angeles',2],
+  ['Sietl','Seattle','ABŞ',47.6062,-122.3321,'America/Los_Angeles',2],
+  ['Vaşinqton','Washington','ABŞ',38.9072,-77.0369,'America/New_York',2],
+  ['Denver','Denver','ABŞ',39.7392,-104.9903,'America/Denver',2],
+  ['Feniks','Phoenix','ABŞ',33.4484,-112.074,'America/Phoenix',3],
+  ['Las-Veqas','Las Vegas','ABŞ',36.1699,-115.1398,'America/Los_Angeles',3],
+  ['Boston','Boston','ABŞ',42.3601,-71.0589,'America/New_York',3],
+  ['Dallas','Dallas','ABŞ',32.7767,-96.797,'America/Chicago',3],
+  ['Atlanta','Atlanta','ABŞ',33.749,-84.388,'America/New_York',3],
+  ['Ankorij','Anchorage','ABŞ',61.2181,-149.9003,'America/Anchorage',2],
+  ['Honolulu','Honolulu','ABŞ',21.3069,-157.8583,'Pacific/Honolulu',2],
+  ['Toronto','Toronto','Kanada',43.6532,-79.3832,'America/Toronto',1],
+  ['Vankuver','Vancouver','Kanada',49.2827,-123.1207,'America/Vancouver',2],
+  ['Monreal','Montreal','Kanada',45.5017,-73.5673,'America/Toronto',3],
+  ['Mexiko','Mexico City','Meksika',19.4326,-99.1332,'America/Mexico_City',1],
+  ['Havana','Havana','Kuba',23.1136,-82.3666,'America/Havana',3],
+  ['Karakas','Caracas','Venesuela',10.4806,-66.9036,'America/Caracas',3],
+  ['Boqota','Bogotá','Kolumbiya',4.711,-74.0721,'America/Bogota',2],
+  ['Lima','Lima','Peru',-12.0464,-77.0428,'America/Lima',2],
+  ['San-Paulu','São Paulo','Braziliya',-23.5505,-46.6333,'America/Sao_Paulo',1],
+  ['Rio-de-Janeyro','Rio de Janeiro','Braziliya',-22.9068,-43.1729,'America/Sao_Paulo',2],
+  ['Buenos-Ayres','Buenos Aires','Argentina',-34.6037,-58.3816,'America/Argentina/Buenos_Aires',1],
+  ['Santyaqo','Santiago','Çili',-33.4489,-70.6693,'America/Santiago',2],
+  // --- Rusiya ---
+  ['Moskva','Moscow','Rusiya',55.7558,37.6173,'Europe/Moscow',1],
+  ['Sankt-Peterburq','Saint Petersburg','Rusiya',59.9343,30.3351,'Europe/Moscow',1],
+  ['Novosibirsk','Novosibirsk','Rusiya',55.0084,82.9357,'Asia/Novosibirsk',1],
+  ['Yekaterinburq','Yekaterinburg','Rusiya',56.8389,60.6057,'Asia/Yekaterinburg',2],
+  ['Kazan','Kazan','Rusiya',55.7887,49.1221,'Europe/Moscow',2],
+  ['Nijni Novqorod','Nizhny Novgorod','Rusiya',56.2965,43.9361,'Europe/Moscow',3],
+  ['Samara','Samara','Rusiya',53.1959,50.1002,'Europe/Samara',3],
+  ['Omsk','Omsk','Rusiya',54.9885,73.3242,'Asia/Omsk',3],
+  ['Krasnoyarsk','Krasnoyarsk','Rusiya',56.0153,92.8932,'Asia/Krasnoyarsk',2],
+  ['İrkutsk','Irkutsk','Rusiya',52.2869,104.305,'Asia/Irkutsk',2],
+  ['Yakutsk','Yakutsk','Rusiya',62.0355,129.6755,'Asia/Yakutsk',2],
+  ['Xabarovsk','Khabarovsk','Rusiya',48.4827,135.0838,'Asia/Vladivostok',3],
+  ['Vladivostok','Vladivostok','Rusiya',43.1155,131.8855,'Asia/Vladivostok',1],
+  ['Maqadan','Magadan','Rusiya',59.5612,150.8301,'Asia/Magadan',3],
+  ['Petropavlovsk-Kamçatski','Petropavlovsk-Kamchatsky','Rusiya',53.0452,158.6483,'Asia/Kamchatka',2],
+  ['Rostov-na-Donu','Rostov-on-Don','Rusiya',47.2357,39.7015,'Europe/Moscow',3],
+  ['Volqoqrad','Volgograd','Rusiya',48.708,44.5133,'Europe/Volgograd',3],
+  ['Perm','Perm','Rusiya',58.0105,56.2502,'Asia/Yekaterinburg',3],
+  ['Ufa','Ufa','Rusiya',54.7388,55.9721,'Asia/Yekaterinburg',3],
+  ['Kalininqrad','Kaliningrad','Rusiya',54.7104,20.4522,'Europe/Kaliningrad',2],
+  ['Murmansk','Murmansk','Rusiya',68.9585,33.0827,'Europe/Moscow',2],
+  ['Soçi','Sochi','Rusiya',43.6028,39.7342,'Europe/Moscow',3],
+  ['Mahaçqala','Makhachkala','Rusiya',42.9849,47.5047,'Europe/Moscow',3],
+  ['Norilsk','Norilsk','Rusiya',69.3558,88.1893,'Asia/Krasnoyarsk',3],
+  // --- Avropa ---
+  ['London','London','Böyük Britaniya',51.5074,-0.1278,'Europe/London',1],
+  ['Paris','Paris','Fransa',48.8566,2.3522,'Europe/Paris',1],
+  ['Berlin','Berlin','Almaniya',52.52,13.405,'Europe/Berlin',1],
+  ['Madrid','Madrid','İspaniya',40.4168,-3.7038,'Europe/Madrid',1],
+  ['Roma','Rome','İtaliya',41.9028,12.4964,'Europe/Rome',1],
+  ['Amsterdam','Amsterdam','Niderland',52.3676,4.9041,'Europe/Amsterdam',2],
+  ['Brüssel','Brussels','Belçika',50.8503,4.3517,'Europe/Brussels',3],
+  ['Vyana','Vienna','Avstriya',48.2082,16.3738,'Europe/Vienna',2],
+  ['Praqa','Prague','Çexiya',50.0755,14.4378,'Europe/Prague',2],
+  ['Varşava','Warsaw','Polşa',52.2297,21.0122,'Europe/Warsaw',2],
+  ['Budapeşt','Budapest','Macarıstan',47.4979,19.0402,'Europe/Budapest',2],
+  ['Afina','Athens','Yunanıstan',37.9838,23.7275,'Europe/Athens',2],
+  ['Lissabon','Lisbon','Portuqaliya',38.7223,-9.1393,'Europe/Lisbon',2],
+  ['Stokholm','Stockholm','İsveç',59.3293,18.0686,'Europe/Stockholm',2],
+  ['Oslo','Oslo','Norveç',59.9139,10.7522,'Europe/Oslo',2],
+  ['Helsinki','Helsinki','Finlandiya',60.1699,24.9384,'Europe/Helsinki',2],
+  ['Kopenhagen','Copenhagen','Danimarka',55.6761,12.5683,'Europe/Copenhagen',3],
+  ['Sürix','Zurich','İsveçrə',47.3769,8.5417,'Europe/Zurich',3],
+  ['Dublin','Dublin','İrlandiya',53.3498,-6.2603,'Europe/Dublin',3],
+  ['Edinburq','Edinburgh','Böyük Britaniya',55.9533,-3.1883,'Europe/London',3],
+  ['Barselona','Barcelona','İspaniya',41.3874,2.1686,'Europe/Madrid',3],
+  ['Münhen','Munich','Almaniya',48.1351,11.582,'Europe/Berlin',3],
+  ['Hamburq','Hamburg','Almaniya',53.5511,9.9937,'Europe/Berlin',3],
+  ['Milan','Milan','İtaliya',45.4642,9.19,'Europe/Rome',3],
+  ['Kiyev','Kyiv','Ukrayna',50.4501,30.5234,'Europe/Kiev',1],
+  ['Minsk','Minsk','Belarus',53.9006,27.559,'Europe/Minsk',2],
+  ['Buxarest','Bucharest','Rumıniya',44.4268,26.1025,'Europe/Bucharest',2],
+  ['Belqrad','Belgrade','Serbiya',44.7866,20.4489,'Europe/Belgrade',3],
+  ['Sofiya','Sofia','Bolqarıstan',42.6977,23.3219,'Europe/Sofia',3],
+  ['Riqa','Riga','Latviya',56.9496,24.1052,'Europe/Riga',3],
+  ['Vilnüs','Vilnius','Litva',54.6872,25.2797,'Europe/Vilnius',3],
+  ['Tallin','Tallinn','Estoniya',59.437,24.7536,'Europe/Tallinn',3],
+  ['Reykyavik','Reykjavik','İslandiya',64.1466,-21.9426,'Atlantic/Reykjavik',2],
+  ['İstanbul','Istanbul','Türkiyə',41.0082,28.9784,'Europe/Istanbul',1],
+  // --- Qafqaz, Asiya, Afrika, Okeaniya ---
+  ['Bakı','Baku','Azərbaycan',40.4093,49.8671,'Asia/Baku',1],
+  ['Gəncə','Ganja','Azərbaycan',40.6828,46.3606,'Asia/Baku',3],
+  ['Tbilisi','Tbilisi','Gürcüstan',41.7151,44.8271,'Asia/Tbilisi',2],
+  ['Ankara','Ankara','Türkiyə',39.9334,32.8597,'Europe/Istanbul',2],
+  ['Tehran','Tehran','İran',35.6892,51.389,'Asia/Tehran',2],
+  ['Dubay','Dubai','BƏƏ',25.2048,55.2708,'Asia/Dubai',1],
+  ['Ər-Riyad','Riyadh','Səudiyyə Ərəbistanı',24.7136,46.6753,'Asia/Riyadh',2],
+  ['Astana','Astana','Qazaxıstan',51.1694,71.4491,'Asia/Almaty',2],
+  ['Almatı','Almaty','Qazaxıstan',43.222,76.8512,'Asia/Almaty',3],
+  ['Daşkənd','Tashkent','Özbəkistan',41.2995,69.2401,'Asia/Tashkent',2],
+  ['Dehli','Delhi','Hindistan',28.6139,77.209,'Asia/Kolkata',1],
+  ['Mumbay','Mumbai','Hindistan',19.076,72.8777,'Asia/Kolkata',2],
+  ['Pekin','Beijing','Çin',39.9042,116.4074,'Asia/Shanghai',1],
+  ['Şanxay','Shanghai','Çin',31.2304,121.4737,'Asia/Shanghai',2],
+  ['Honkonq','Hong Kong','Çin',22.3193,114.1694,'Asia/Hong_Kong',2],
+  ['Tokio','Tokyo','Yaponiya',35.6762,139.6503,'Asia/Tokyo',1],
+  ['Seul','Seoul','Cənubi Koreya',37.5665,126.978,'Asia/Seoul',2],
+  ['Sinqapur','Singapore','Sinqapur',1.3521,103.8198,'Asia/Singapore',2],
+  ['Banqkok','Bangkok','Tailand',13.7563,100.5018,'Asia/Bangkok',2],
+  ['Cakarta','Jakarta','İndoneziya',-6.2088,106.8456,'Asia/Jakarta',2],
+  ['Sidney','Sydney','Avstraliya',-33.8688,151.2093,'Australia/Sydney',1],
+  ['Melburn','Melbourne','Avstraliya',-37.8136,144.9631,'Australia/Melbourne',3],
+  ['Okland','Auckland','Yeni Zelandiya',-36.8485,174.7633,'Pacific/Auckland',2],
+  ['Qahirə','Cairo','Misir',30.0444,31.2357,'Africa/Cairo',1],
+  ['Laqos','Lagos','Nigeriya',6.5244,3.3792,'Africa/Lagos',2],
+  ['Nayrobi','Nairobi','Keniya',-1.2921,36.8219,'Africa/Nairobi',2],
+  ['Yohannesburq','Johannesburg','CAR',-26.2041,28.0473,'Africa/Johannesburg',2],
+  ['Keyptaun','Cape Town','CAR',-33.9249,18.4241,'Africa/Johannesburg',2],
+  // --- Afrika (əlavə) ---
+  ['Kinşasa','Kinshasa','Konqo DR',-4.4419,15.2663,'Africa/Kinshasa',1],
+  ['Luanda','Luanda','Anqola',-8.839,13.2894,'Africa/Luanda',2],
+  ['Əddis-Əbəbə','Addis Ababa','Efiopiya',9.03,38.74,'Africa/Addis_Ababa',1],
+  ['Dar-es-Salam','Dar es Salaam','Tanzaniya',-6.7924,39.2083,'Africa/Dar_es_Salaam',2],
+  ['Xartum','Khartoum','Sudan',15.5007,32.5599,'Africa/Khartoum',2],
+  ['Kasablanka','Casablanca','Mərakeş',33.5731,-7.5898,'Africa/Casablanca',1],
+  ['Rabat','Rabat','Mərakeş',34.0209,-6.8416,'Africa/Casablanca',3],
+  ['Marrakeş','Marrakesh','Mərakeş',31.6295,-7.9811,'Africa/Casablanca',3],
+  ['Əlcəzair','Algiers','Əlcəzair',36.7538,3.0588,'Africa/Algiers',2],
+  ['Tunis','Tunis','Tunis',36.8065,10.1815,'Africa/Tunis',2],
+  ['Trablus','Tripoli','Liviya',32.8872,13.1913,'Africa/Tripoli',3],
+  ['İsgəndəriyyə','Alexandria','Misir',31.2001,29.9187,'Africa/Cairo',3],
+  ['Akkra','Accra','Qana',5.6037,-0.187,'Africa/Accra',2],
+  ['Abican','Abidjan','Kot-d’İvuar',5.36,-4.0083,'Africa/Abidjan',2],
+  ['Dakar','Dakar','Seneqal',14.7167,-17.4677,'Africa/Dakar',2],
+  ['Bamako','Bamako','Mali',12.6392,-8.0029,'Africa/Bamako',3],
+  ['Abuca','Abuja','Nigeriya',9.0765,7.3986,'Africa/Lagos',3],
+  ['Duala','Douala','Kamerun',4.0511,9.7679,'Africa/Douala',3],
+  ['Kampala','Kampala','Uqanda',0.3476,32.5825,'Africa/Kampala',2],
+  ['Kiqali','Kigali','Ruanda',-1.9441,30.0619,'Africa/Kigali',3],
+  ['Moqadişu','Mogadishu','Somali',2.0469,45.3182,'Africa/Mogadishu',3],
+  ['Lusaka','Lusaka','Zambiya',-15.3875,28.3228,'Africa/Lusaka',3],
+  ['Harare','Harare','Zimbabve',-17.8252,31.0335,'Africa/Harare',3],
+  ['Maputu','Maputo','Mozambik',-25.9692,32.5732,'Africa/Maputo',3],
+  ['Vindhuk','Windhoek','Namibiya',-22.5609,17.0658,'Africa/Windhoek',3],
+  ['Durban','Durban','CAR',-29.8587,31.0218,'Africa/Johannesburg',3],
+  ['Antananarivu','Antananarivo','Madaqaskar',-18.8792,47.5079,'Indian/Antananarivo',2],
+  // --- Qrenlandiya ---
+  ['Nuuk','Nuuk','Qrenlandiya',64.1814,-51.6941,'America/Godthab',1],
+  ['İlulissat','Ilulissat','Qrenlandiya',69.2198,-51.0986,'America/Godthab',3],
+  ['Kangerlussuak','Kangerlussuaq','Qrenlandiya',67.0086,-50.6892,'America/Godthab',3],
+  ['Tasiilak','Tasiilaq','Qrenlandiya',65.6145,-37.6368,'America/Godthab',3],
+  ['Kaanaak','Qaanaaq','Qrenlandiya',77.467,-69.2285,'America/Thule',3],
+  ['İttokkortoormiit','Ittoqqortoormiit','Qrenlandiya',70.4853,-21.9667,'America/Scoresbysund',3],
+  // --- İslandiya ---
+  ['Akureyri','Akureyri','İslandiya',65.6885,-18.1262,'Atlantic/Reykjavik',3],
+  // --- Alyaska ---
+  ['Feyrbanks','Fairbanks','ABŞ (Alyaska)',64.8378,-147.7164,'America/Anchorage',3],
+  ['Cuno','Juneau','ABŞ (Alyaska)',58.3019,-134.4197,'America/Juneau',3],
+  ['Utkiaqvik','Utqiagvik','ABŞ (Alyaska)',71.2906,-156.7886,'America/Anchorage',3],
+  ['Noum','Nome','ABŞ (Alyaska)',64.5011,-165.4064,'America/Nome',3],
+  ['Kodiak','Kodiak','ABŞ (Alyaska)',57.79,-152.4072,'America/Anchorage',3],
+  // --- Antarktida (stansiyalar) ---
+  ['Cənub Qütbü','South Pole (Amundsen–Scott)','Antarktida',-89.9,139.27,'Antarctica/McMurdo',1],
+  ['Makmerdo','McMurdo Station','Antarktida',-77.8419,166.6863,'Antarctica/McMurdo',1],
+  ['Vostok','Vostok Station','Antarktida',-78.4645,106.834,'Antarctica/Vostok',2],
+  ['Keysi','Casey Station','Antarktida',-66.2823,110.5278,'Antarctica/Casey',3],
+  ['Deyvis','Davis Station','Antarktida',-68.5766,77.9674,'Antarctica/Davis',3],
+  ['Mouson','Mawson Station','Antarktida',-67.6027,62.8738,'Antarctica/Mawson',3],
+  ['Syova','Syowa Station','Antarktida',-69.0042,39.5818,'Antarctica/Syowa',3],
+  ['Troll','Troll Station','Antarktida',-72.0114,2.535,'Antarctica/Troll',3],
+  ['Rozera','Rothera Station','Antarktida',-67.5676,-68.1274,'Antarctica/Rothera',2],
+  ['Palmer','Palmer Station','Antarktida',-64.7743,-64.0538,'Antarctica/Palmer',3],
+  ['Esperansa','Esperanza Base','Antarktida',-63.3967,-56.9967,'America/Argentina/Ushuaia',3],
+  ['Düman-d’Ürvil','Dumont d’Urville','Antarktida',-66.6631,140.0011,'Antarctica/DumontDUrville',3],
+  // --- Antarktidaya yaxın şəhərlər ---
+  ['Uşuaya','Ushuaia','Argentina',-54.8019,-68.303,'America/Argentina/Ushuaia',2],
+  ['Punta-Arenas','Punta Arenas','Çili',-53.1638,-70.9171,'America/Punta_Arenas',3],
+  ['Hobart','Hobart','Avstraliya',-42.8821,147.3272,'Australia/Hobart',3],
+  ['Kraystçerç','Christchurch','Yeni Zelandiya',-43.5321,172.6362,'Pacific/Auckland',3],
+];
+const DEFAULT_FAVS = ['Bakı','London','Nyu-York','Moskva','Dubay','Tokio','Los-Anceles'];
+const FAVS = (() => {
+  try { const a = JSON.parse(localStorage.getItem('ds_favs')); if (Array.isArray(a)) return a; } catch {}
+  return DEFAULT_FAVS.slice();
+})();
+const saveFavs = () => { try { localStorage.setItem('ds_favs', JSON.stringify(FAVS)); } catch {} };
+
+/* ========================= köməkçilər ========================= */
+const $ = s => document.querySelector(s);
+const DEG = Math.PI / 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pad = n => String(n).padStart(2, '0');
+const norm = s => s.toLocaleLowerCase('az').replace(/ə/g,'e').replace(/ı/g,'i')
+  .normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+
+function ll2v(lat, lon, r = 1, out = new THREE.Vector3()) {
+  const la = lat * DEG, ph = (lon + 180) * DEG;
+  return out.set(-Math.cos(ph) * Math.cos(la) * r, Math.sin(la) * r, Math.sin(ph) * Math.cos(la) * r);
+}
+
+/* Günəşin altındakı nöqtə (subsolar point) */
+function sunLatLon(date) {
+  const d = (date.getTime() - 946728000000) / 86400000;
+  const g = (357.529 + 0.98560028 * d) % 360;
+  const q = (280.459 + 0.98564736 * d) % 360;
+  const L = q + 1.915 * Math.sin(g * DEG) + 0.020 * Math.sin(2 * g * DEG);
+  const e = 23.439 - 0.00000036 * d;
+  const RA = Math.atan2(Math.cos(e * DEG) * Math.sin(L * DEG), Math.cos(L * DEG)) / DEG;
+  const dec = Math.asin(Math.sin(e * DEG) * Math.sin(L * DEG)) / DEG;
+  const gmst = ((18.697374558 + 24.06570982441908 * d) % 24 + 24) % 24;
+  let lon = RA - gmst * 15;
+  lon = ((lon + 540) % 360 + 360) % 360 - 180;
+  return { lat: dec, lon };
+}
+const _sv = new THREE.Vector3();
+function sunAlt(c, date) { // dərəcə ilə
+  const s = sunLatLon(date);
+  ll2v(s.lat, s.lon, 1, _sv);
+  return Math.asin(clamp(c.v.dot(_sv), -1, 1)) / DEG;
+}
+
+/* ===== saat qurşaqları ===== */
+const fmts = new Map();
+function tzParts(tz, date) {
+  let f = fmts.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+    fmts.set(tz, f);
+  }
+  const o = {};
+  for (const p of f.formatToParts(date)) if (p.type !== 'literal') o[p.type] = +p.value;
+  o.hour %= 24;
+  return o;
+}
+const hm = (tz, d) => { const p = tzParts(tz, d); return pad(p.hour) + ':' + pad(p.minute); };
+function offMin(tz, date) {
+  const p = tzParts(tz, date);
+  return Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(date.getTime() / 1000) * 1000) / 60000);
+}
+const fmtOff = m => { const s = m < 0 ? '−' : '+'; m = Math.abs(m); return s + Math.floor(m / 60) + (m % 60 ? ':' + pad(m % 60) : ''); };
+const MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avqust','sentyabr','oktyabr','noyabr','dekabr'];
+const WEEK = ['Bazar','Bazar ertəsi','Çərşənbə axşamı','Çərşənbə','Cümə axşamı','Cümə','Şənbə'];
+const azDate = p => `${p.day} ${MONTHS[p.month - 1]} ${p.year}, ${WEEK[new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay()]}`;
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+/* vaxt maşını: real vaxta əlavə olunan sürüşmə (ms) */
+let timeOffset = 0;
+const simNow = () => new Date(Date.now() + timeOffset);
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+const cities = RAW.map((r, i) => {
+  const c = { id: i, name: r[0], en: r[1], country: r[2], lat: r[3], lon: r[4], tz: r[5], rank: r[6] };
+  c.v = ll2v(c.lat, c.lon);
+  c.nk = norm(c.name); c.ek = norm(c.en); c.key = norm(c.name + c.en + c.country);
+  return c;
+});
+const byName = Object.fromEntries(cities.map(c => [c.name, c]));
+
+/* =========================== səhnə =========================== */
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+const PR = Math.min(devicePixelRatio, 2);
+renderer.setPixelRatio(PR);
+renderer.setSize(innerWidth, innerHeight);
+$('#stage').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 1000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.enablePan = false;
+controls.minDistance = 1.12;
+controls.maxDistance = 9;
+controls.zoomSpeed = 0.7;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.35;
+
+const sunDir = new THREE.Vector3(1, 0, 0);
+
+/* ---------- ulduzlar ---------- */
+let stars;
+{
+  const N = 7000, pos = new Float32Array(N * 3), size = new Float32Array(N), col = new Float32Array(N * 3), ph = new Float32Array(N);
+  const v = new THREE.Vector3();
+  for (let i = 0; i < N; i++) {
+    v.randomDirection().multiplyScalar(120 + Math.random() * 80);
+    pos.set([v.x, v.y, v.z], i * 3);
+    size[i] = Math.pow(Math.random(), 6) * 4.5 + 0.6;
+    const t = Math.random();
+    const c = t < .15 ? [1, .82, .65] : t < .35 ? [.7, .82, 1] : [1, 1, 1];
+    col.set(c, i * 3);
+    ph[i] = Math.random() * 100;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+  g.setAttribute('aCol', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('aPh', new THREE.BufferAttribute(ph, 1));
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uPR: { value: PR } },
+    vertexShader: `attribute float aSize;attribute vec3 aCol;attribute float aPh;uniform float uT;uniform float uPR;varying vec3 vC;varying float vA;
+      void main(){vC=aCol;vA=0.55+0.45*sin(uT*(0.6+fract(aPh)*1.8)+aPh);gl_PointSize=aSize*uPR;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `varying vec3 vC;varying float vA;void main(){float r=length(gl_PointCoord-.5)*2.;float a=exp(-r*r*5.)*vA;gl_FragColor=vec4(vC*a,a);}`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  stars = new THREE.Points(g, m);
+  scene.add(stars);
+}
+
+/* ---------- günəş ---------- */
+function glowTex(stops) {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  stops.forEach(([o, s]) => gr.addColorStop(o, s));
+  x.fillStyle = gr; x.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+const sun = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTex([[0, 'rgba(255,255,255,1)'], [.06, 'rgba(255,250,235,1)'], [.14, 'rgba(255,225,160,.55)'], [.35, 'rgba(255,170,90,.12)'], [1, 'rgba(255,140,60,0)']]),
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
+}));
+sun.scale.setScalar(26);
+scene.add(sun);
+
+/* ---------- teksturalar ---------- */
+const loader = new THREE.TextureLoader();
+loader.setCrossOrigin('anonymous');
+const TG = 'https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/';
+const TG2 = 'https://unpkg.com/three-globe@2.31.0/example/img/';
+const TJ = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
+function loadTex(urls) {
+  return new Promise((res, rej) => {
+    let i = 0;
+    const next = () => {
+      if (i >= urls.length) return rej(new Error('texture'));
+      loader.load(urls[i++], t => { t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t); }, undefined, next);
+    };
+    next();
+  });
+}
+
+const earthUniforms = {
+  dayTex: { value: null }, nightTex: { value: null }, waterTex: { value: null }, sunDir: { value: sunDir }
+};
+const earthMat = new THREE.ShaderMaterial({
+  uniforms: earthUniforms,
+  vertexShader: `varying vec2 vUv;varying vec3 vN;varying vec3 vP;
+    void main(){vUv=uv;vN=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vP=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+  fragmentShader: `uniform sampler2D dayTex,nightTex,waterTex;uniform vec3 sunDir;varying vec2 vUv;varying vec3 vN;varying vec3 vP;
+    void main(){
+      vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vP);
+      float d=dot(N,sunDir);
+      float dayMix=smoothstep(-0.10,0.16,d);
+      vec3 day=texture2D(dayTex,vUv).rgb;
+      vec3 dayCol=day*mix(0.30,1.22,smoothstep(-0.05,0.75,d));
+      /* gecə işıqları */
+      vec3 nl=texture2D(nightTex,vUv).rgb;
+      float lum=dot(nl,vec3(.299,.587,.114));
+      vec3 lights=pow(nl,vec3(1.35))*vec3(1.0,0.80,0.50)*2.9 + vec3(1.0,0.62,0.25)*pow(lum,3.0)*1.6;
+      vec3 nightCol=day*vec3(0.035,0.05,0.09)+lights;
+      vec3 col=mix(nightCol,dayCol,dayMix);
+      /* alaqaranlıq zolağı */
+      float tw=exp(-pow(d*7.0,2.0));
+      col+=vec3(1.0,0.42,0.12)*tw*0.16;
+      /* okean parıltısı */
+      float water=texture2D(waterTex,vUv).r;
+      vec3 R=reflect(-sunDir,N);
+      float spec=pow(max(dot(R,V),0.0),28.0)*water*dayMix;
+      col+=vec3(1.0,0.93,0.8)*spec*0.65;
+      /* atmosfer kənarı */
+      float fres=pow(1.0-max(dot(N,V),0.0),3.0);
+      vec3 atm=mix(vec3(0.03,0.06,0.18),vec3(0.35,0.62,1.0),smoothstep(-0.3,0.5,d));
+      col+=atm*fres*(0.25+0.95*smoothstep(-0.35,0.4,d));
+      gl_FragColor=vec4(col,1.0);
+    }`
+});
+const earth = new THREE.Mesh(new THREE.SphereGeometry(1, 160, 160), earthMat);
+scene.add(earth);
+
+/* atmosfer halo */
+const atmMat = new THREE.ShaderMaterial({
+  uniforms: { sunDir: { value: sunDir } },
+  vertexShader: `varying vec3 vN;varying vec3 vP;void main(){vN=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vP=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
+  fragmentShader: `uniform vec3 sunDir;varying vec3 vN;varying vec3 vP;
+    void main(){
+      vec3 V=normalize(cameraPosition-vP);
+      float k=-dot(normalize(vN),V);
+      float i=pow(clamp(k/0.42,0.0,1.0),2.6);
+      vec3 limb=normalize(vP-V*dot(vP,V));
+      float s=dot(limb,sunDir);
+      vec3 col=mix(vec3(0.05,0.09,0.25)*0.6,vec3(0.32,0.62,1.0),smoothstep(-0.35,0.45,s));
+      col+=vec3(1.0,0.45,0.18)*exp(-s*s*28.0)*0.3;
+      gl_FragColor=vec4(col*i*1.3,1.0);
+    }`,
+  side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const atmosphere = new THREE.Mesh(new THREE.SphereGeometry(1.1, 96, 96), atmMat);
+atmosphere.renderOrder = 1;
+scene.add(atmosphere);
+
+/* buludlar */
+let clouds = null;
+function makeClouds(tex) {
+  const m = new THREE.ShaderMaterial({
+    uniforms: { tex: { value: tex }, sunDir: { value: sunDir } },
+    vertexShader: `varying vec2 vUv;varying vec3 vN;void main(){vUv=uv;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `uniform sampler2D tex;uniform vec3 sunDir;varying vec2 vUv;varying vec3 vN;
+      void main(){vec4 t=texture2D(tex,vUv);float a=t.a*t.r;float d=dot(normalize(vN),sunDir);float lit=smoothstep(-0.12,0.35,d);
+        vec3 col=mix(vec3(0.02,0.03,0.06),vec3(1.0),lit)+vec3(1.0,0.45,0.15)*exp(-pow(d*7.0,2.0))*0.25;
+        gl_FragColor=vec4(col,a*mix(0.28,0.82,lit));}`,
+    transparent: true, depthWrite: false
+  });
+  clouds = new THREE.Mesh(new THREE.SphereGeometry(1.007, 128, 128), m);
+  clouds.renderOrder = 2;
+  scene.add(clouds);
+}
+
+/* şəhər nöqtələri */
+{
+  const pos = new Float32Array(cities.length * 3), rank = new Float32Array(cities.length);
+  cities.forEach((c, i) => { const p = c.v.clone().multiplyScalar(1.004); pos.set([p.x, p.y, p.z], i * 3); rank[i] = c.rank; });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aRank', new THREE.BufferAttribute(rank, 1));
+  const m = new THREE.ShaderMaterial({
+    uniforms: { sunDir: { value: sunDir }, uPR: { value: PR }, uScale: { value: 24 } },
+    vertexShader: `uniform vec3 sunDir;uniform float uPR;uniform float uScale;attribute float aRank;varying float vDay;varying float vFace;
+      void main(){vec3 n=normalize(position);vDay=smoothstep(-0.12,0.12,dot(n,sunDir));
+        vFace=smoothstep(0.0,0.12,dot(n,normalize(cameraPosition-position)));
+        vec4 mv=modelViewMatrix*vec4(position,1.);float s=uScale*(aRank<1.5?1.25:(aRank<2.5?1.0:0.8));
+        gl_PointSize=clamp(s/-mv.z,3.0,24.0)*uPR;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader: `varying float vDay;varying float vFace;
+      void main(){float r=length(gl_PointCoord-0.5)*2.0;if(r>1.0)discard;
+        float core=smoothstep(0.34,0.0,r);float glow=exp(-r*r*5.0)*0.85;
+        vec3 col=mix(vec3(1.0,0.76,0.40),vec3(0.55,0.9,1.0),vDay);
+        float a=(core+glow*mix(1.0,0.55,vDay))*vFace;
+        gl_FragColor=vec4(col+core*0.6,a);}`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  const pts = new THREE.Points(g, m);
+  pts.renderOrder = 3;
+  scene.add(pts);
+}
+
+/* seçilmiş şəhər üçün nəbz halqaları */
+const ringMat = () => new THREE.MeshBasicMaterial({ color: 0xffb84d, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+const rings = [0, 0.5].map(off => {
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 64), ringMat());
+  m.userData.off = off; m.visible = false; m.renderOrder = 4; scene.add(m); return m;
+});
+
+/* ======================= etiketlər (HTML) ======================= */
+const labelsEl = $('#labels');
+cities.forEach(c => {
+  const el = document.createElement('div');
+  el.className = 'lbl';
+  el.innerHTML = `<i></i><b>${c.name}</b><span>--:--</span>`;
+  el.addEventListener('click', e => { e.stopPropagation(); selectCity(c); });
+  labelsEl.appendChild(el);
+  c.el = el; c.tEl = el.querySelector('span'); c.shown = false; c.w = 0;
+});
+const order = [...cities].sort((a, b) => a.rank - b.rank || a.id - b.id);
+let labelsOn = true;
+const tmpV = new THREE.Vector3();
+
+function measure() { cities.forEach(c => { c.w = c.el.offsetWidth || (30 + c.name.length * 7 + 40); }); }
+
+function updateLabels() {
+  const cam = camera.position, dist = cam.length(), W = innerWidth, H = innerHeight;
+  const placed = [];
+  const list = selected ? [selected, ...order.filter(c => c !== selected)] : order;
+  for (const c of list) {
+    const isSel = c === selected;
+    let vis = false, x = 0, y = 0, f = 0;
+    if (labelsOn || isSel) {
+      f = (c.v.dot(cam) - 1) / (dist - 1);
+      const need = c.rank === 1 ? 99 : c.rank === 2 ? 2.75 : 1.95;
+      if (f > 0.05 && (dist < need || isSel)) {
+        tmpV.copy(c.v).project(camera);
+        x = (tmpV.x + 1) / 2 * W; y = (1 - tmpV.y) / 2 * H;
+        if (x > -50 && x < W + 10 && y > -20 && y < H + 20) {
+          const r = { a: x + 7, b: y - 13, c: x + 9 + c.w, d: y + 13 };
+          vis = isSel || !placed.some(p => r.a < p.c && r.c > p.a && r.b < p.d && r.d > p.b);
+          if (vis) placed.push(r);
+        }
+      }
+    }
+    if (vis) {
+      c.el.style.transform = `translate(${(x + 9).toFixed(1)}px,${(y - 11).toFixed(1)}px)`;
+      c.el.style.opacity = clamp(f * 5, 0, 1).toFixed(2);
+      if (!c.shown) { c.el.classList.add('on'); c.shown = true; }
+    } else if (c.shown) {
+      c.el.style.opacity = 0; c.el.classList.remove('on'); c.shown = false;
+    }
+  }
+}
+
+/* ======================= kamera animasiyası ======================= */
+let anim = null;
+const HOME_DIR = ll2v(32, 42).normalize();
+const HOME_DIST = 3.4;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+function flyTo(dir, dist, dur = 1700) {
+  const from = camera.position.clone();
+  const fromDir = from.clone().normalize();
+  const toDir = dir.clone().normalize();
+  const ang = fromDir.angleTo(toDir);
+  anim = { fromDir, toDir, fromDist: from.length(), toDist: dist, t0: performance.now(), dur: dur * (0.6 + 0.4 * ang / Math.PI) + 300, ang,
+    q: new THREE.Quaternion().setFromUnitVectors(fromDir, toDir) };
+  controls.enabled = false;
+}
+const qI = new THREE.Quaternion(), qT = new THREE.Quaternion();
+function stepAnim(now) {
+  if (!anim) return;
+  const t = clamp((now - anim.t0) / anim.dur, 0, 1), e = ease(t);
+  qT.copy(qI).slerp(anim.q, e);
+  const d = THREE.MathUtils.lerp(anim.fromDist, anim.toDist, e) + Math.sin(Math.PI * e) * anim.ang * 0.45;
+  camera.position.copy(anim.fromDir).applyQuaternion(qT).multiplyScalar(d);
+  camera.lookAt(0, 0, 0);
+  if (t >= 1) { anim = null; controls.enabled = true; }
+}
+
+/* ======================= seçim / panel ======================= */
+let selected = null, autoRot = true;
+const panel = $('#panel');
+
+function selectCity(c) {
+  if (measureFrom) {
+    const a = measureFrom; cancelMeasure();
+    if (a !== c) {
+      if (selected) selected.el.classList.remove('sel');
+      selected = null;
+      rings.forEach(r => r.visible = false);
+      panel.classList.remove('show');
+      document.body.classList.remove('panel-open');
+      renderFavs();
+      showRoute(a, c); closeResults(); $('#q').blur(); return;
+    }
+  }
+  if (selected) selected.el.classList.remove('sel');
+  document.body.classList.add('panel-open');
+  selected = c;
+  c.el.classList.add('sel');
+  controls.autoRotate = false;
+  flyTo(c.v, 1.55);
+  rings.forEach(r => {
+    r.visible = true;
+    r.position.copy(c.v).multiplyScalar(1.004);
+    r.lookAt(tmpV.copy(c.v).multiplyScalar(2));
+  });
+  c.events = null; c.evAt = 0;
+  panel.classList.add('show');
+  $('#alForm').classList.remove('show');
+  updatePanel(simNow());
+  renderWx(c);
+  updateFavBtn();
+  closeResults(); $('#q').blur();
+  renderFavs();
+}
+function goHome() {
+  cancelMeasure();
+  if (selected) selected.el.classList.remove('sel');
+  selected = null;
+  document.body.classList.remove('panel-open');
+  rings.forEach(r => r.visible = false);
+  panel.classList.remove('show');
+  flyTo(HOME_DIR, HOME_DIST, 1800);
+  controls.autoRotate = autoRot;
+  renderFavs();
+}
+
+function nextEvents(c, now) {
+  const STEP = 5 * 60000, H0 = -0.833;
+  let prev = sunAlt(c, now) - H0, rise = null, set = null;
+  for (let m = 1; m <= 36 * 12 && (!rise || !set); m++) {
+    const t = now.getTime() + m * STEP, v = sunAlt(c, new Date(t)) - H0;
+    const cross = t - STEP + (0 - prev) / (v - prev) * STEP;
+    if (!rise && prev < 0 && v >= 0) rise = new Date(cross);
+    if (!set && prev >= 0 && v < 0) set = new Date(cross);
+    prev = v;
+  }
+  return { rise, set };
+}
+
+/* analog saat */
+(() => {
+  const svg = $('#analog'); let s = `<circle cx="50" cy="50" r="47" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>`;
+  for (let i = 0; i < 60; i++) {
+    const big = i % 5 === 0, a = i * 6 * DEG, r1 = big ? 38 : 41, r2 = 44;
+    s += `<line x1="${50 + Math.sin(a) * r1}" y1="${50 - Math.cos(a) * r1}" x2="${50 + Math.sin(a) * r2}" y2="${50 - Math.cos(a) * r2}" stroke="rgba(255,255,255,${big ? .55 : .15})" stroke-width="${big ? 1.8 : 1}" stroke-linecap="round"/>`;
+  }
+  s += `<line id="hH" x1="50" y1="53" x2="50" y2="27" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+        <line id="hM" x1="50" y1="54" x2="50" y2="15" stroke="#dbe6ff" stroke-width="2.2" stroke-linecap="round"/>
+        <line id="hS" x1="50" y1="58" x2="50" y2="12" stroke="#ffb84d" stroke-width="1.1" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="2.6" fill="#ffb84d"/>`;
+  svg.innerHTML = s;
+})();
+
+function stateOf(alt) { return alt > -0.833 ? ['', '☀ Gündüz'] : alt > -6 ? ['tw', '◐ Alaqaranlıq'] : ['n', '☾ Gecə']; }
+
+function updatePanel(now) {
+  const c = selected; if (!c) return;
+  const p = tzParts(c.tz, now);
+  $('#pName').textContent = c.name;
+  $('#pCountry').textContent = `${c.country} · ${c.en}`;
+  $('#pTime').innerHTML = `${pad(p.hour)}:${pad(p.minute)}<em>:${pad(p.second)}</em>`;
+  $('#pDate').textContent = azDate(p);
+  $('#hH').setAttribute('transform', `rotate(${(p.hour % 12 + p.minute / 60) * 30} 50 50)`);
+  $('#hM').setAttribute('transform', `rotate(${(p.minute + p.second / 60) * 6} 50 50)`);
+  $('#hS').setAttribute('transform', `rotate(${p.second * 6} 50 50)`);
+  const alt = sunAlt(c, now), [cls, txt] = stateOf(alt);
+  const st = $('#pState'); st.className = 'state ' + cls; st.textContent = `${txt} · ${alt.toFixed(0)}°`;
+  panel.classList.toggle('night', cls === 'n');
+  const off = offMin(c.tz, now), diff = off - offMin(LOCAL_TZ, now);
+  $('#pOff').textContent = 'UTC' + fmtOff(off);
+  $('#pDiff').textContent = diff === 0 ? 'Eyni vaxt' : fmtOff(diff) + ' saat';
+  const lp = tzParts(LOCAL_TZ, now);
+  $('#pYou').textContent = `Sizdə: ${pad(lp.hour)}:${pad(lp.minute)} · ${lp.day} ${MONTHS[lp.month - 1]}`;
+  if (!c.events || Math.abs(now - c.evAt) > 60000) { c.events = nextEvents(c, now); c.evAt = now.getTime(); }
+  $('#pRise').textContent = c.events.rise ? hm(c.tz, c.events.rise) : '— qütb';
+  $('#pSet').textContent = c.events.set ? hm(c.tz, c.events.set) : '— qütb';
+  $('#pCoord').textContent = `${Math.abs(c.lat).toFixed(2)}°${c.lat >= 0 ? 'Şm' : 'C'}  ${Math.abs(c.lon).toFixed(2)}°${c.lon >= 0 ? 'Ş' : 'Q'}  ·  ${c.tz}`;
+}
+
+/* ======================= sevimlilər ======================= */
+const favEl = $('#favs');
+function renderFavs() {
+  favEl.innerHTML = '';
+  cities.forEach(c => { c.favEl = null; });
+  const list = FAVS.map(n => byName[n]).filter(Boolean);
+  if (!list.length) favEl.innerHTML = '<div class="mut" style="padding:10px 12px">★ Sevimli şəhər əlavə edin</div>';
+  list.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (c === selected ? ' sel' : '');
+    const w = c.wxShort ? `<span class="wxs">${c.wxShort.ic} ${c.wxShort.t}°</span>` : '';
+    b.innerHTML = `<b><i></i>${c.name}${w}</b><span class="ct">--:--</span><u class="rm" title="Sevimlilərdən çıxar">×</u>`;
+    b.onclick = e => {
+      if (e.target.classList.contains('rm')) { e.stopPropagation(); toggleFav(c); return; }
+      selectCity(c);
+    };
+    c.favEl = b; c.favT = b.querySelector('.ct');
+    favEl.appendChild(b);
+  });
+  tick(true);
+}
+
+/* ======================= axtarış ======================= */
+const q = $('#q'), resEl = $('#results');
+let results = [], act = 0;
+function search(s) {
+  const k = norm(s);
+  if (!k) return [];
+  const out = [];
+  for (const c of cities) {
+    let sc = -1;
+    if (c.nk.startsWith(k) || c.ek.startsWith(k)) sc = 0;
+    else if (c.key.includes(k)) sc = 1;
+    if (sc >= 0) out.push([sc, c.rank, c]);
+  }
+  return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 8).map(x => x[2]);
+}
+function renderResults() {
+  const s = q.value.trim(), now = simNow();
+  results = s ? search(s) : (FAVS.length ? FAVS : DEFAULT_FAVS).map(n => byName[n]).filter(Boolean);
+  act = 0;
+  if (!results.length) { resEl.innerHTML = `<div class="empty">“${s.replace(/[<>&]/g, '')}” tapılmadı</div>`; resEl.classList.add('show'); return; }
+  resEl.innerHTML = (s ? '' : '<div class="res-h">Sevimlilər</div>') + results.map((c, i) => {
+    const [cls] = stateOf(sunAlt(c, now));
+    return `<div class="res ${cls}${i === 0 ? ' act' : ''}" data-i="${i}"><div class="ic">${cls === 'n' ? '☾' : cls === 'tw' ? '◐' : '☀'}</div>
+      <div class="nm"><b>${c.name}</b><small>${c.country} · UTC${fmtOff(offMin(c.tz, now))}</small></div><div class="tm">${hm(c.tz, now)}</div></div>`;
+  }).join('');
+  resEl.classList.add('show');
+}
+function closeResults() { resEl.classList.remove('show'); }
+function setAct(i) {
+  act = (i + results.length) % results.length;
+  resEl.querySelectorAll('.res').forEach((e, j) => e.classList.toggle('act', j === act));
+  resEl.querySelectorAll('.res')[act]?.scrollIntoView({ block: 'nearest' });
+}
+q.addEventListener('input', renderResults);
+q.addEventListener('focus', renderResults);
+q.addEventListener('blur', () => setTimeout(closeResults, 150));
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); setAct(act + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); setAct(act - 1); }
+  else if (e.key === 'Enter' && results[act]) { selectCity(results[act]); q.value = ''; }
+  else if (e.key === 'Escape') { q.value = ''; q.blur(); }
+});
+resEl.addEventListener('mousedown', e => {
+  const r = e.target.closest('.res'); if (!r) return;
+  e.preventDefault(); selectCity(results[+r.dataset.i]); q.value = '';
+});
+addEventListener('keydown', e => {
+  if (document.activeElement === q) return;
+  if (e.key === '/') { e.preventDefault(); q.focus(); }
+  else if (e.key === 'Escape') { if (measureFrom) cancelMeasure(); else goHome(); }
+});
+
+/* ======================= düymələr ======================= */
+$('#pClose').onclick = goHome;
+$('#pBack').onclick = goHome;
+$('#bHome').onclick = goHome;
+$('#bRot').onclick = () => { autoRot = !autoRot; $('#bRot').classList.toggle('on', autoRot); controls.autoRotate = autoRot && !selected; };
+$('#bLbl').onclick = () => { labelsOn = !labelsOn; $('#bLbl').classList.toggle('on', labelsOn); };
+
+/* ======================= kliklə seçmək ======================= */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null;
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+cv.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || performance.now() - down.t > 450) return;
+  const tol = e.pointerType === 'touch' ? 26 : 18;
+  if (pickISS(e.clientX, e.clientY, tol)) { focusISS(); return; }
+  const c = pickCity(e.clientX, e.clientY, tol); if (c) selectCity(c);
+});
+cv.addEventListener('dblclick', e => {
+  if (pickCity(e.clientX, e.clientY, 18)) return;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObject(earth)[0];
+  if (hit) { controls.autoRotate = false; flyTo(hit.point, Math.max(1.22, camera.position.length() * 0.55), 1200); }
+});
+function pickCity(px, py, maxPx) {
+  const cam = camera.position, dist = cam.length();
+  let best = null, bd = maxPx;
+  for (const c of cities) {
+    if ((c.v.dot(cam) - 1) / (dist - 1) < 0.05) continue;
+    tmpV.copy(c.v).project(camera);
+    const d = Math.hypot((tmpV.x + 1) / 2 * innerWidth - px, (1 - tmpV.y) / 2 * innerHeight - py);
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best;
+}
+
+/* ======================= saniyəlik yeniləmə ======================= */
+let lastSec = -1;
+function tick(force) {
+  const now = simNow();
+  const sec = Math.floor(now.getTime() / 1000);
+  if (!force && sec === lastSec) return;
+  lastSec = sec;
+  const s = sunLatLon(now);
+  ll2v(s.lat, s.lon, 1, _sv);
+  for (const c of cities) {
+    c.tEl.textContent = hm(c.tz, now);
+    const alt = Math.asin(clamp(c.v.dot(_sv), -1, 1)) / DEG;
+    const [cls] = stateOf(alt);
+    if (c.cls !== cls) { c.el.classList.remove('n', 'tw'); if (cls) c.el.classList.add(cls); c.cls = cls; }
+    if (c.favEl) { c.favT.textContent = hm(c.tz, now); c.favEl.classList.toggle('n', cls === 'n'); }
+  }
+  const lp = tzParts(LOCAL_TZ, now);
+  $('#localTime').textContent = `${pad(lp.hour)}:${pad(lp.minute)}:${pad(lp.second)}`;
+  $('#localDate').textContent = azDate(lp);
+  $('#utc').textContent = `UTC ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())} · ${LOCAL_TZ}`;
+  $('#nowLbl').textContent = timeOffset ? 'Seçilmiş vaxt (sizdə)' : 'Sizin vaxt';
+  updateMoonUI(now);
+  updatePanel(now);
+}
+
+/* ======================= əsas dövr ======================= */
+let prevT = performance.now();
+function frame(now) {
+  const dt = Math.min((now - prevT) / 1000, 0.1); prevT = now;
+  const s = sunLatLon(simNow());
+  ll2v(s.lat, s.lon, 1, sunDir);
+  featuresFrame(now, dt);
+  sun.position.copy(sunDir).multiplyScalar(150);
+
+  stepAnim(now);
+  const dist = camera.position.length();
+  controls.rotateSpeed = clamp((dist - 1) * 0.32, 0.04, 0.8);
+  controls.zoomSpeed = clamp((dist - 1) * 0.35, 0.25, 0.9);
+  if (controls.enabled) controls.update();
+
+  if (clouds) clouds.rotation.y += dt * 0.0045;
+  stars.material.uniforms.uT.value = now / 1000;
+
+  if (selected) {
+    const base = clamp((dist - 1) * 0.045, 0.004, 0.09);
+    rings.forEach(r => {
+      const ph = ((now / 1600) + r.userData.off) % 1;
+      r.scale.setScalar(base * (0.25 + ph * 1.1));
+      r.material.opacity = (1 - ph) * 0.9;
+    });
+  }
+
+  renderer.render(scene, camera);
+  updateLabels();
+  updateISSLabel();
+  tick();
+  requestAnimationFrame(frame);
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* =====================================================================
+   ƏLAVƏ FUNKSİYALAR
+   ===================================================================== */
+function toast(msg, ms = 2800, cls = '') {
+  const t = document.createElement('div');
+  t.className = 'toast glass ' + cls; t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity .4s'; t.style.opacity = 0; setTimeout(() => t.remove(), 450); }, ms);
+}
+function slerpV(a, b, f, out) {
+  const w = Math.acos(clamp(a.dot(b) / (a.length() * b.length()), -1, 1));
+  if (w < 1e-5) return out.copy(a).lerp(b, f);
+  const s = Math.sin(w);
+  return out.copy(a).multiplyScalar(Math.sin((1 - f) * w) / s).addScaledVector(b, Math.sin(f * w) / s);
+}
+const tmpV2 = new THREE.Vector3();
+function occluded(P) { // nöqtə Yerin arxasında qalırmı?
+  const C = camera.position, d = tmpV2.copy(P).sub(C);
+  const a = d.lengthSq(), b = C.dot(d), cc = C.lengthSq() - 1, disc = b * b - a * cc;
+  if (disc < 0) return false;
+  const t = (-b - Math.sqrt(disc)) / a;
+  return t > 0 && t < 1;
+}
+
+/* ---------- 1. Vaxt maşını ---------- */
+const tRange = $('#tRange');
+let playing = false;
+const PLAY_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>';
+const PAUSE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+function updTimeLbl() {
+  const h = timeOffset / 3600000;
+  if (Math.abs(h) < 1e-6) { $('#tLbl').textContent = 'İndi · canlı'; return; }
+  const a = Math.abs(h), H = Math.floor(a), M = Math.round((a - H) * 60);
+  const p = tzParts(LOCAL_TZ, simNow());
+  $('#tLbl').textContent = `${h > 0 ? '+' : '−'}${H} saat${M ? ' ' + M + ' dəq' : ''} · sizdə ${p.day} ${MONTHS[p.month - 1].slice(0, 3)} ${pad(p.hour)}:${pad(p.minute)}`;
+}
+function setOffset(h, quiet) {
+  timeOffset = Math.round(h * 3600000);
+  if (!quiet || Math.abs(+tRange.value - h) > 0.2) tRange.value = h;
+  document.body.classList.toggle('sim', timeOffset !== 0);
+  updTimeLbl();
+  if (!quiet) tick(true);
+}
+
+/* ---------- 2. Hava (Open-Meteo, pulsuz, açarsız) ---------- */
+const WX = {0:['Açıq','☀️'],1:['Əsasən açıq','🌤️'],2:['Qismən buludlu','⛅'],3:['Buludlu','☁️'],45:['Duman','🌫️'],48:['Qırovlu duman','🌫️'],
+  51:['Zəif çiskin','🌦️'],53:['Çiskin','🌦️'],55:['Güclü çiskin','🌦️'],56:['Donan çiskin','🌧️'],57:['Donan çiskin','🌧️'],
+  61:['Zəif yağış','🌧️'],63:['Yağış','🌧️'],65:['Güclü yağış','🌧️'],66:['Donan yağış','🌧️'],67:['Donan yağış','🌧️'],
+  71:['Zəif qar','🌨️'],73:['Qar','❄️'],75:['Güclü qar','❄️'],77:['Qar dənələri','🌨️'],80:['Leysan','🌦️'],81:['Leysan','🌧️'],82:['Güclü leysan','⛈️'],
+  85:['Qar leysanı','🌨️'],86:['Güclü qar leysanı','🌨️'],95:['Tufan','⛈️'],96:['Dolulu tufan','⛈️'],99:['Güclü dolulu tufan','⛈️']};
+const WD_SHORT = ['B.','B.e.','Ç.a.','Ç.','C.a.','C.','Ş.'];
+const wxInfo = (code, isDay) => { const w = WX[code] || ['—', '🌡️']; return (!isDay && code <= 1) ? [w[0], '🌙'] : w; };
+const wxCache = new Map();
+async function getWeather(c) {
+  const hit = wxCache.get(c.id);
+  if (hit && Date.now() - hit.t < 10 * 60000) return hit.data;
+  const u = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=4&timezone=auto`;
+  const r = await fetch(u); if (!r.ok) throw new Error('wx');
+  const data = await r.json(); wxCache.set(c.id, { t: Date.now(), data }); return data;
+}
+function renderWx(c) {
+  const el = $('#pWx');
+  el.innerHTML = '<div class="wx-load">Hava yüklənir…</div>';
+  getWeather(c).then(d => {
+    if (selected !== c) return;
+    const cur = d.current, [desc, ic] = wxInfo(cur.weather_code, cur.is_day);
+    const days = d.daily.time.slice(1, 4).map((t, i) => {
+      const k = i + 1, [, di] = wxInfo(d.daily.weather_code[k], 1);
+      const wd = WD_SHORT[new Date(t + 'T12:00:00Z').getUTCDay()];
+      return `<div class="wd"><small>${wd}</small><span>${di}</span><b>${Math.round(d.daily.temperature_2m_max[k])}°</b><em>${Math.round(d.daily.temperature_2m_min[k])}°</em></div>`;
+    }).join('');
+    el.innerHTML = `<div class="wx-now"><div class="wx-ic">${ic}</div><div><div class="wx-t">${Math.round(cur.temperature_2m)}°C</div><div class="wx-d">${desc}</div></div>
+      <div class="wx-meta">Hiss olunur ${Math.round(cur.apparent_temperature)}°<br>Rütubət ${cur.relative_humidity_2m}%<br>Külək ${Math.round(cur.wind_speed_10m)} km/saat</div></div>
+      <div class="wx-days">${days}</div>`;
+  }).catch(() => { if (selected === c) el.innerHTML = '<div class="wx-load">Hava məlumatı alınmadı (internet?)</div>'; });
+}
+async function loadFavWx() {
+  const list = FAVS.map(n => byName[n]).filter(Boolean);
+  if (!list.length) return;
+  try {
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${list.map(c => c.lat).join(',')}&longitude=${list.map(c => c.lon).join(',')}&current=temperature_2m,weather_code,is_day`;
+    const r = await fetch(u); if (!r.ok) return;
+    const j = await r.json(), arr = Array.isArray(j) ? j : [j];
+    arr.forEach((d, i) => { if (list[i] && d.current) list[i].wxShort = { t: Math.round(d.current.temperature_2m), ic: wxInfo(d.current.weather_code, d.current.is_day)[1] }; });
+    renderFavs();
+  } catch {}
+}
+
+/* ---------- 3. Sevimlilər ---------- */
+function toggleFav(c) {
+  const i = FAVS.indexOf(c.name);
+  if (i >= 0) FAVS.splice(i, 1); else FAVS.push(c.name);
+  saveFavs(); renderFavs(); updateFavBtn();
+  if (i < 0) loadFavWx();
+  toast(i >= 0 ? `${c.name} sevimlilərdən çıxarıldı` : `★ ${c.name} sevimlilərə əlavə olundu`);
+}
+function updateFavBtn() {
+  if (!selected) return;
+  const on = FAVS.includes(selected.name), b = $('#aFav');
+  b.classList.toggle('on', on);
+  b.querySelector('span').textContent = on ? 'Sevimlidə' : 'Sevimli';
+}
+
+/* ---------- 4. Ay: faza və 3D Ay ---------- */
+function moonAge(date) { // 0 = yeni ay, 0.5 = bədirlənmiş
+  const ref = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
+  let a = ((date.getTime() / 86400000 - ref) / 29.530588853) % 1;
+  return a < 0 ? a + 1 : a;
+}
+function moonName(a) {
+  return a < .0339 ? 'Yeni ay' : a < .216 ? 'Böyüyən hilal' : a < .284 ? 'İlk dördəbir' : a < .466 ? 'Böyüyən ay'
+    : a < .534 ? 'Bədirlənmiş ay' : a < .716 ? 'Azalan ay' : a < .784 ? 'Son dördəbir' : a < .966 ? 'Azalan hilal' : 'Yeni ay';
+}
+function drawMoon(cv, a) {
+  const x = cv.getContext('2d'), W = cv.width, c = W / 2, r = c - 2;
+  x.clearRect(0, 0, W, W);
+  x.fillStyle = '#1c2438'; x.beginPath(); x.arc(c, c, r, 0, Math.PI * 2); x.fill();
+  const k = Math.cos(2 * Math.PI * a), wax = a < 0.5, sgn = wax ? 1 : -1;
+  x.fillStyle = '#f4ead0'; x.shadowColor = 'rgba(255,240,200,.6)'; x.shadowBlur = 6;
+  x.beginPath();
+  for (let i = 0; i <= 40; i++) { const th = -Math.PI / 2 + Math.PI * i / 40; x.lineTo(c + sgn * r * Math.cos(th), c + r * Math.sin(th)); }
+  for (let i = 40; i >= 0; i--) { const th = -Math.PI / 2 + Math.PI * i / 40; x.lineTo(c + sgn * k * r * Math.cos(th), c + r * Math.sin(th)); }
+  x.closePath(); x.fill(); x.shadowBlur = 0;
+}
+let lastMoonMin = -1;
+function updateMoonUI(now) {
+  const m = Math.floor(now.getTime() / 60000);
+  if (m === lastMoonMin) return; lastMoonMin = m;
+  const a = moonAge(now), il = (1 - Math.cos(2 * Math.PI * a)) / 2;
+  drawMoon($('#moonCv'), a);
+  $('#moonTxt').textContent = `Ay: ${moonName(a)} · ${Math.round(il * 100)}%`;
+}
+function moonLatLon(date) {
+  const d = (date.getTime() - 946728000000) / 86400000;
+  const L = (218.316 + 13.176396 * d) * DEG, M = (134.963 + 13.064993 * d) * DEG, F = (93.272 + 13.229350 * d) * DEG;
+  const lon = L + 6.289 * DEG * Math.sin(M), lat = 5.128 * DEG * Math.sin(F), e = 23.4397 * DEG;
+  const ra = Math.atan2(Math.sin(lon) * Math.cos(e) - Math.tan(lat) * Math.sin(e), Math.cos(lon));
+  const dec = Math.asin(Math.sin(lat) * Math.cos(e) + Math.cos(lat) * Math.sin(e) * Math.sin(lon));
+  const gmst = ((18.697374558 + 24.06570982441908 * d) % 24 + 24) % 24;
+  let lo = ra / DEG - gmst * 15; lo = ((lo + 540) % 360 + 360) % 360 - 180;
+  return { lat: dec / DEG, lon: lo };
+}
+const moonLight = new THREE.DirectionalLight(0xffffff, 2.8);
+scene.add(moonLight);
+const moon = new THREE.Mesh(new THREE.SphereGeometry(0.55, 48, 48), new THREE.MeshLambertMaterial({ color: 0x9a9a9a }));
+scene.add(moon);
+loadTex([TJ + 'moon_1024.jpg']).then(t => { t.colorSpace = THREE.SRGBColorSpace; moon.material.map = t; moon.material.color.set(0xffffff); moon.material.needsUpdate = true; }).catch(() => {});
+
+/* ---------- 5. Qütb parıltısı (aurora) ---------- */
+let kp = 3, kpLive = false, auroraOn = true;
+const auroraMat = new THREE.ShaderMaterial({
+  uniforms: { sunDir: { value: sunDir }, uAxis: { value: ll2v(80.7, -72.7).normalize() }, uKp: { value: kp }, uT: { value: 0 } },
+  vertexShader: `varying vec3 vN;void main(){vN=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `uniform vec3 sunDir;uniform vec3 uAxis;uniform float uKp;uniform float uT;varying vec3 vN;
+    void main(){vec3 n=normalize(vN);
+      float am=abs(asin(clamp(dot(n,uAxis),-1.,1.)))*57.2958;
+      float c=66.5-uKp*1.9, w=2.0+uKp*0.4;
+      float band=exp(-pow((am-c)/w,2.));
+      float red=exp(-pow((am-c-w*1.3)/(w*1.2),2.));
+      float s=sin(n.x*43.+uT*.9)*sin(n.z*39.-uT*.6)+sin(n.y*57.+n.x*21.+uT*.4)*.6;
+      float cur=.5+.5*clamp(s,-1.,1.);
+      float night=smoothstep(.08,-.2,dot(n,sunDir));
+      float k=(.45+uKp*.09)*night;
+      vec3 col=vec3(.12,1.,.5)*band*cur*k+vec3(.9,.15,.4)*red*cur*.35*k;
+      gl_FragColor=vec4(col,1.);}`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const aurora = new THREE.Mesh(new THREE.SphereGeometry(1.012, 128, 128), auroraMat);
+aurora.renderOrder = 2;
+scene.add(aurora);
+async function loadKp() {
+  try {
+    const r = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
+    const j = await r.json();
+    for (let i = j.length - 1; i >= 0; i--) {
+      const row = j[i];
+      const v = parseFloat(Array.isArray(row) ? row[1] : (row.Kp ?? row.kp ?? row.kp_index ?? row.estimated_kp));
+      if (isFinite(v)) { kp = v; kpLive = true; break; }
+    }
+  } catch {}
+  auroraMat.uniforms.uKp.value = kp;
+  renderKp();
+}
+function renderKp() {
+  const lvl = kp < 3 ? 'zəif' : kp < 5 ? 'orta' : kp < 7 ? 'güclü' : 'maqnit fırtınası';
+  $('#kpTxt').innerHTML = `Qütb parıltısı: <b>Kp ${kp.toFixed(1)}</b> · ${lvl}${kpLive ? '' : ' (təxmini)'}`;
+}
+
+/* ---------- 6. Beynəlxalq Kosmik Stansiya (ISS) ---------- */
+let issOn = true, issTrack = null, issInfo = null, issBase = 0, issTrail = null;
+const issPos = new THREE.Vector3();
+const issSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: glowTex([[0, 'rgba(255,255,255,1)'], [.16, 'rgba(210,248,255,.95)'], [.4, 'rgba(111,214,255,.28)'], [1, 'rgba(111,214,255,0)']]),
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
+}));
+issSprite.scale.setScalar(0.07); issSprite.visible = false; issSprite.renderOrder = 6;
+scene.add(issSprite);
+const issTrailMat = new THREE.ShaderMaterial({
+  uniforms: { uNow: { value: 0 } },
+  vertexShader: `attribute float aT;uniform float uNow;varying float vD;void main(){vD=aT-uNow;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `varying float vD;void main(){float a=vD<0.?0.85*exp(vD/30.):0.45*exp(-vD/30.)*step(.45,fract(vD*.5));gl_FragColor=vec4(vec3(.55,.9,1.)*a,a);}`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const issLbl = document.createElement('div');
+issLbl.className = 'lbl iss'; issLbl.innerHTML = '<i></i><b>ISS</b><span>—</span>';
+issLbl.addEventListener('click', e => { e.stopPropagation(); focusISS(); });
+labelsEl.appendChild(issLbl);
+async function loadISSTrack() {
+  try {
+    const now = Math.floor(Date.now() / 1000), ts = [];
+    for (let k = -4; k <= 5; k++) ts.push(now + k * 600);
+    const r = await fetch(`https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps=${ts.join(',')}&units=kilometers`);
+    if (!r.ok) return;
+    const arr = await r.json();
+    issTrack = arr.map(p => ({ t: p.timestamp * 1000, v: ll2v(p.latitude, p.longitude), r: 1 + p.altitude / 6371 })).sort((a, b) => a.t - b.t);
+    issBase = issTrack[0].t;
+    const pos = [], at = [], tmp = new THREE.Vector3();
+    for (let i = 0; i < issTrack.length - 1; i++) {
+      const A = issTrack[i], B = issTrack[i + 1];
+      for (let s = 0; s < 30; s++) {
+        const f = s / 30;
+        slerpV(A.v, B.v, f, tmp).normalize().multiplyScalar(THREE.MathUtils.lerp(A.r, B.r, f));
+        pos.push(tmp.x, tmp.y, tmp.z); at.push((A.t + (B.t - A.t) * f - issBase) / 60000);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aT', new THREE.Float32BufferAttribute(at, 1));
+    if (issTrail) { scene.remove(issTrail); issTrail.geometry.dispose(); }
+    issTrail = new THREE.Line(g, issTrailMat); issTrail.renderOrder = 5; issTrail.visible = issOn;
+    scene.add(issTrail);
+  } catch {}
+}
+async function loadISSInfo() { try { const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544'); if (r.ok) issInfo = await r.json(); } catch {} }
+function issAt(t, out) {
+  const T = issTrack;
+  if (!T || t < T[0].t || t > T[T.length - 1].t) return null;
+  for (let i = 0; i < T.length - 1; i++) if (t <= T[i + 1].t) {
+    const f = (t - T[i].t) / (T[i + 1].t - T[i].t);
+    return slerpV(T[i].v, T[i + 1].v, f, out).normalize().multiplyScalar(THREE.MathUtils.lerp(T[i].r, T[i + 1].r, f));
+  }
+  return null;
+}
+function pickISS(px, py, tol) {
+  if (!issSprite.visible || occluded(issPos)) return false;
+  tmpV.copy(issPos).project(camera);
+  return Math.hypot((tmpV.x + 1) / 2 * innerWidth - px, (1 - tmpV.y) / 2 * innerHeight - py) < tol;
+}
+function focusISS() {
+  if (!issSprite.visible) return;
+  controls.autoRotate = false;
+  flyTo(issPos, 1.75, 1400);
+  const alt = Math.round(issInfo ? issInfo.altitude : (issPos.length() - 1) * 6371);
+  const vel = Math.round(issInfo ? issInfo.velocity : 27600);
+  toast(`🛰 Beynəlxalq Kosmik Stansiya · hündürlük ${alt} km · sürət ${vel.toLocaleString('az')} km/saat · 90 dəqiqəyə Yerin ətrafını dolanır`, 5000);
+}
+let issLblTxt = '';
+function updateISSLabel() {
+  if (!issSprite.visible || !labelsOn || occluded(issPos)) {
+    if (issLbl.classList.contains('on')) { issLbl.style.opacity = 0; issLbl.classList.remove('on'); }
+    return;
+  }
+  tmpV.copy(issPos).project(camera);
+  const x = (tmpV.x + 1) / 2 * innerWidth, y = (1 - tmpV.y) / 2 * innerHeight;
+  issLbl.style.transform = `translate(${(x + 12).toFixed(1)}px,${(y - 11).toFixed(1)}px)`;
+  issLbl.style.opacity = 1; issLbl.classList.add('on');
+  const t = Math.round((issPos.length() - 1) * 6371) + ' km';
+  if (t !== issLblTxt) { issLblTxt = t; issLbl.querySelector('span').textContent = t; }
+}
+
+/* ---------- 7. İki şəhər arası məsafə və uçuş xətti ---------- */
+let measureFrom = null, route = null;
+const routeMat = new THREE.ShaderMaterial({
+  uniforms: { uT: { value: 0 } },
+  vertexShader: `varying float vX;void main(){vX=uv.x;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader: `uniform float uT;varying float vX;void main(){vec3 c=mix(vec3(.43,.84,1.),vec3(1.,.72,.3),vX);float d=.45+.55*smoothstep(.25,.5,fract(vX*26.-uT*.8));gl_FragColor=vec4(c*d,1.);}`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const planeTex = glowTex([[0, 'rgba(255,255,255,1)'], [.2, 'rgba(255,226,170,.95)'], [.5, 'rgba(255,184,77,.25)'], [1, 'rgba(255,184,77,0)']]);
+function startMeasure() {
+  if (!selected) return;
+  measureFrom = selected;
+  document.body.classList.add('measuring');
+  toast(`✈ ${selected.name} → indi ikinci şəhəri seçin (klik və ya axtarış)`, 4000);
+}
+function cancelMeasure() { measureFrom = null; document.body.classList.remove('measuring'); }
+function clearRoute() {
+  if (route) { scene.remove(route.mesh, route.plane); route.mesh.geometry.dispose(); route = null; }
+  $('#route').classList.remove('show');
+}
+function showRoute(a, b) {
+  clearRoute();
+  const ang = Math.acos(clamp(a.v.dot(b.v), -1, 1));
+  const N = Math.max(40, Math.ceil(ang * 90)), h = Math.min(0.22, 0.03 + ang * 0.1);
+  const pts = [], tmp = new THREE.Vector3();
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    slerpV(a.v, b.v, t, tmp);
+    pts.push(tmp.clone().normalize().multiplyScalar(1.003 + Math.sin(Math.PI * t) * h));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, N * 2, 0.003, 6, false), routeMat);
+  mesh.renderOrder = 5;
+  const plane = new THREE.Sprite(new THREE.SpriteMaterial({ map: planeTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  plane.scale.setScalar(0.05); plane.renderOrder = 6;
+  scene.add(mesh, plane);
+  route = { a, b, mesh, plane, curve };
+  const km = 6371 * ang, hrs = km / 850 + 0.5, now = simNow();
+  const diff = offMin(b.tz, now) - offMin(a.tz, now);
+  let H = Math.floor(hrs), M = Math.round((hrs - H) * 60); if (M === 60) { H++; M = 0; }
+  $('#rA').textContent = a.name; $('#rB').textContent = b.name;
+  $('#rKm').textContent = Math.round(km).toLocaleString('az') + ' km';
+  $('#rFly').textContent = `~${H} saat ${M} dəq`;
+  $('#rDiff').textContent = diff === 0 ? 'Eyni vaxt' : fmtOff(diff) + ' saat';
+  $('#route').classList.add('show');
+  const mid = slerpV(a.v, b.v, 0.5, new THREE.Vector3());
+  if (mid.lengthSq() < 1e-6) mid.copy(a.v);
+  controls.autoRotate = false;
+  flyTo(mid, clamp(1.7 + ang * 1.1, 1.7, 4.2));
+}
+
+/* ---------- 8. Xatırlatmalar (zəngli saat) ---------- */
+let alarms = (() => { try { const a = JSON.parse(localStorage.getItem('ds_alarms')); return Array.isArray(a) ? a : []; } catch { return []; } })();
+function saveAlarms() { try { localStorage.setItem('ds_alarms', JSON.stringify(alarms)); } catch {} renderAlarms(); }
+function openAlarmForm() {
+  if (!selected) return;
+  const f = $('#alForm');
+  f.classList.toggle('show');
+  if (f.classList.contains('show')) {
+    const p = tzParts(selected.tz, new Date());
+    $('#alTime').value = `${pad((p.hour + 1) % 24)}:00`;
+  }
+}
+function saveAlarm() {
+  const c = selected; if (!c) return;
+  const v = $('#alTime').value;
+  if (!/^\d\d:\d\d$/.test(v)) { toast('Vaxtı seçin'); return; }
+  const [h, m] = v.split(':').map(Number);
+  alarms.push({ id: Date.now(), city: c.name, h, m, label: $('#alLabel').value.trim().slice(0, 60), last: '' });
+  saveAlarms();
+  $('#alForm').classList.remove('show'); $('#alLabel').value = '';
+  toast(`⏰ ${c.name} vaxtı ilə ${v} üçün xatırlatma quruldu (hər gün)`);
+  if ('Notification' in window && Notification.permission === 'default') { try { Notification.requestPermission(); } catch {} }
+}
+function localEquiv(c, a, now) {
+  const diff = offMin(LOCAL_TZ, now) - offMin(c.tz, now);
+  const t = ((a.h * 60 + a.m + diff) % 1440 + 1440) % 1440;
+  return `sizdə ${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+}
+function renderAlarms() {
+  const n = alarms.length, b = $('#alBadge');
+  b.textContent = n; b.style.display = n ? 'grid' : 'none';
+  const now = new Date();
+  $('#alList').innerHTML = n ? alarms.map(a => {
+    const c = byName[a.city];
+    return `<div class="al"><b>${pad(a.h)}:${pad(a.m)}</b><div>${esc(a.city)}${a.label ? ' · ' + esc(a.label) : ''}<small>${c ? localEquiv(c, a, now) : ''} · hər gün</small></div><button data-id="${a.id}" title="Sil">×</button></div>`;
+  }).join('') : '<p class="mut" style="margin-bottom:8px">Hələ xatırlatma yoxdur.</p>';
+}
+function beep() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [0, .35, .7, 1.05].forEach(t => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.value = t % .7 === 0 ? 880 : 1175;
+      g.gain.setValueAtTime(.0001, ac.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(.3, ac.currentTime + t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + t + .3);
+      o.connect(g).connect(ac.destination); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .32);
+    });
+  } catch {}
+}
+function checkAlarms() {
+  const now = new Date(); let changed = false;
+  for (const a of alarms) {
+    const c = byName[a.city]; if (!c) continue;
+    const p = tzParts(c.tz, now), key = `${p.year}-${p.month}-${p.day}`;
+    if (p.hour === a.h && p.minute === a.m && a.last !== key) {
+      a.last = key; changed = true;
+      const msg = `⏰ ${c.name}: ${pad(a.h)}:${pad(a.m)}${a.label ? ' — ' + a.label : ''}`;
+      toast(msg, 12000, 'alarm'); beep();
+      try { if ('Notification' in window && Notification.permission === 'granted') new Notification('Dünya Saatı', { body: msg, icon: 'icon.svg' }); } catch {}
+      navigator.vibrate?.([300, 150, 300]);
+    }
+  }
+  if (changed) saveAlarms();
+}
+
+/* ---------- hər kadr ---------- */
+function featuresFrame(now, dt) {
+  if (playing) { let h = timeOffset / 3600000 + dt * 0.5; if (h > 48) h = -48; setOffset(h, true); }
+  const ml = moonLatLon(simNow());
+  ll2v(ml.lat, ml.lon, 40, moon.position);
+  moon.lookAt(0, 0, 0);
+  moonLight.position.copy(sunDir).multiplyScalar(100);
+  auroraMat.uniforms.uT.value = now / 1000;
+  if (route) {
+    routeMat.uniforms.uT.value = now / 1000;
+    route.plane.position.copy(route.curve.getPointAt((now / 5000) % 1));
+  }
+  if (issOn && issAt(Date.now(), issPos)) {
+    issSprite.visible = true; issSprite.position.copy(issPos);
+    issTrailMat.uniforms.uNow.value = (Date.now() - issBase) / 60000;
+  } else issSprite.visible = false;
+}
+
+function initFeatures() {
+  $('#aFav').onclick = () => selected && toggleFav(selected);
+  $('#aDist').onclick = startMeasure;
+  $('#aAlarm').onclick = openAlarmForm;
+  $('#alSave').onclick = saveAlarm;
+  $('#alLabel').addEventListener('keydown', e => { if (e.key === 'Enter') saveAlarm(); });
+  $('#rClose').onclick = clearRoute;
+  $('#alClose').onclick = () => $('#alarmsModal').classList.remove('show');
+  $('#bIss').onclick = () => { issOn = !issOn; $('#bIss').classList.toggle('on', issOn); if (issTrail) issTrail.visible = issOn; };
+  $('#bAur').onclick = () => { auroraOn = !auroraOn; $('#bAur').classList.toggle('on', auroraOn); aurora.visible = auroraOn; };
+  $('#bAlarm').onclick = () => { $('#alarmsModal').classList.toggle('show'); renderAlarms(); };
+  $('#alList').addEventListener('click', e => {
+    const b = e.target.closest('button[data-id]'); if (!b) return;
+    alarms = alarms.filter(a => a.id !== +b.dataset.id); saveAlarms();
+  });
+  $('#tPlay').innerHTML = PLAY_SVG;
+  tRange.addEventListener('input', () => setOffset(+tRange.value));
+  $('#tNow').onclick = () => { playing = false; $('#tPlay').classList.remove('on'); $('#tPlay').innerHTML = PLAY_SVG; setOffset(0); };
+  $('#tPlay').onclick = () => { playing = !playing; $('#tPlay').classList.toggle('on', playing); $('#tPlay').innerHTML = playing ? PAUSE_SVG : PLAY_SVG; if (!playing) tick(true); };
+  renderAlarms(); renderKp(); updTimeLbl();
+  loadKp(); setInterval(loadKp, 15 * 60000);
+  loadISSTrack(); loadISSInfo(); setInterval(loadISSTrack, 4 * 60000); setInterval(loadISSInfo, 20000);
+  loadFavWx(); setInterval(loadFavWx, 15 * 60000);
+  setInterval(checkAlarms, 1000);
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* ======================= başlanğıc ======================= */
+camera.position.copy(ll2v(10, -60).multiplyScalar(9));
+camera.lookAt(0, 0, 0);
+renderFavs();
+tick(true);
+measure();
+document.fonts?.ready.then(measure);
+initFeatures();
+requestAnimationFrame(frame);
+
+Promise.all([
+  loadTex([TG + 'earth-blue-marble.jpg', TG2 + 'earth-blue-marble.jpg', TJ + 'earth_atmos_2048.jpg']),
+  loadTex([TG + 'earth-night.jpg', TG2 + 'earth-night.jpg', TJ + 'earth_lights_2048.png']),
+  loadTex([TG + 'earth-water.png', TG2 + 'earth-water.png', TJ + 'earth_specular_2048.jpg']),
+]).then(([day, night, water]) => {
+  earthUniforms.dayTex.value = day;
+  earthUniforms.nightTex.value = night;
+  earthUniforms.waterTex.value = water;
+  $('#loader').classList.add('hide');
+  flyTo(HOME_DIR, HOME_DIST, 2800);
+  loadTex([TJ + 'earth_clouds_2048.png', TJ + 'earth_clouds_1024.png']).then(makeClouds).catch(() => {});
+}).catch(() => {
+  $('#ldTxt').textContent = 'Teksturalar yüklənmədi — internet bağlantısını yoxlayın.';
+});
+</script>
+</body>
+</html>

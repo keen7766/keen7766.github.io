@@ -1,0 +1,16 @@
+{
+  "name": "Dünya Saatı — Canlı Yer Kürəsi",
+  "short_name": "Dünya Saatı",
+  "description": "3D Yer kürəsi üzərində dünya saatları, gecə-gündüz, hava, Ay, ISS və xatırlatmalar",
+  "lang": "az",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#02040a",
+  "theme_color": "#03050c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
