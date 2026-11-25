@@ -374,7 +374,7 @@ body.measuring #stage canvas{cursor:crosshair}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
       <em>Adlar</em>
     </button>
-    <button class="ib on" id="bIss" data-tip="Beynəlxalq Kosmik Stansiyanı göstər">
+    <button class="ib on" id="bIss" data-tip="ISS-i tap (yenidən basanda gizlənir)">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="9" width="4" height="6" rx="1"/><rect x="2" y="8" width="6" height="8" rx="1"/><rect x="16" y="8" width="6" height="8" rx="1"/><path d="M8 12h2M14 12h2M12 9V5M12 19v-4"/></svg>
       <em>ISS</em>
     </button>
@@ -1413,7 +1413,7 @@ const issSprite = new THREE.Sprite(new THREE.SpriteMaterial({
   map: glowTex([[0, 'rgba(255,255,255,1)'], [.16, 'rgba(210,248,255,.95)'], [.4, 'rgba(111,214,255,.28)'], [1, 'rgba(111,214,255,0)']]),
   blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
 }));
-issSprite.scale.setScalar(0.07); issSprite.visible = false; issSprite.renderOrder = 6;
+issSprite.scale.setScalar(0.09); issSprite.visible = false; issSprite.renderOrder = 6;
 scene.add(issSprite);
 const issTrailMat = new THREE.ShaderMaterial({
   uniforms: { uNow: { value: 0 } },
@@ -1631,7 +1631,18 @@ function initFeatures() {
   $('#alLabel').addEventListener('keydown', e => { if (e.key === 'Enter') saveAlarm(); });
   $('#rClose').onclick = clearRoute;
   $('#alClose').onclick = () => $('#alarmsModal').classList.remove('show');
-  $('#bIss').onclick = () => { issOn = !issOn; $('#bIss').classList.toggle('on', issOn); if (issTrail) issTrail.visible = issOn; };
+  $('#bIss').onclick = () => {
+    // Görünmürsə: göstər və ora uç. Artıq ekranda görünürsə: gizlət.
+    const inView = issOn && issSprite.visible && !occluded(issPos);
+    if (inView) { issOn = false; issSprite.visible = false; }
+    else {
+      issOn = true;
+      if (issAt(Date.now(), issPos)) { issSprite.visible = true; focusISS(); }
+      else toast('ISS məlumatı hələ yüklənməyib — bir neçə saniyə sonra yenidən basın');
+    }
+    $('#bIss').classList.toggle('on', issOn);
+    if (issTrail) issTrail.visible = issOn;
+  };
   $('#bAur').onclick = () => { auroraOn = !auroraOn; $('#bAur').classList.toggle('on', auroraOn); aurora.visible = auroraOn; };
   $('#bAlarm').onclick = () => { $('#alarmsModal').classList.toggle('show'); renderAlarms(); };
   $('#alList').addEventListener('click', e => {
