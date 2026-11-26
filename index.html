@@ -368,7 +368,7 @@ body.measuring #stage canvas{cursor:crosshair}
     </button>
     <button class="ib on" id="bRot" data-tip="Kürə özü yavaş fırlansın">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>
-      <em>Fırlanma</em>
+      <em>Fırlat</em>
     </button>
     <button class="ib on" id="bLbl" data-tip="Şəhər adlarını göstər / gizlət">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg>
@@ -381,6 +381,10 @@ body.measuring #stage canvas{cursor:crosshair}
     <button class="ib on" id="bAur" data-tip="Qütb parıltısını (aurora) göstər">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c3-8 6-12 9-12s6 4 9 12"/><path d="M7 18c1.5-4 3-6 5-6s3.5 2 5 6"/></svg>
       <em>Aurora</em>
+    </button>
+    <button class="ib" id="bMus" data-tip="Sakit fon musiqisi (aç / bağla)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <em>Musiqi</em>
     </button>
     <button class="ib" id="bAlarm" data-tip="Qurulmuş xatırlatmalar">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -1078,7 +1082,16 @@ function search(s) {
     else if (c.key.includes(k)) sc = 1;
     if (sc >= 0) out.push([sc, c.rank, c]);
   }
-  return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 8).map(x => x[2]);
+  const res = out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 8).map(x => x[2]);
+  if (k.length >= 2 && ISS_KEYS.some(w => w.startsWith(k) || k.startsWith(w))) res.unshift(ISS_RESULT);
+  return res;
+}
+const ISS_RESULT = { iss: true };
+const ISS_KEYS = ['iss', 'kosmik', 'kosmikstansiya', 'stansiya', 'beynelxalqkosmikstansiya', 'spacestation', 'peyk'];
+function pickResult(r) {
+  q.value = '';
+  if (r.iss) { closeResults(); q.blur(); findISS(); }
+  else selectCity(r);
 }
 function renderResults() {
   const s = q.value.trim(), now = simNow();
@@ -1086,6 +1099,8 @@ function renderResults() {
   act = 0;
   if (!results.length) { resEl.innerHTML = `<div class="empty">“${s.replace(/[<>&]/g, '')}” tapılmadı</div>`; resEl.classList.add('show'); return; }
   resEl.innerHTML = (s ? '' : '<div class="res-h">Sevimlilər</div>') + results.map((c, i) => {
+    if (c.iss) return `<div class="res${i === 0 ? ' act' : ''}" data-i="${i}"><div class="ic">🛰</div>
+      <div class="nm"><b>ISS</b><small>Beynəlxalq Kosmik Stansiya · canlı yer</small></div><div class="tm">${issSprite.visible ? Math.round((issPos.length() - 1) * 6371) + ' km' : ''}</div></div>`;
     const [cls] = stateOf(sunAlt(c, now));
     return `<div class="res ${cls}${i === 0 ? ' act' : ''}" data-i="${i}"><div class="ic">${cls === 'n' ? '☾' : cls === 'tw' ? '◐' : '☀'}</div>
       <div class="nm"><b>${c.name}</b><small>${c.country} · UTC${fmtOff(offMin(c.tz, now))}</small></div><div class="tm">${hm(c.tz, now)}</div></div>`;
@@ -1104,12 +1119,12 @@ q.addEventListener('blur', () => setTimeout(closeResults, 150));
 q.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') { e.preventDefault(); setAct(act + 1); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); setAct(act - 1); }
-  else if (e.key === 'Enter' && results[act]) { selectCity(results[act]); q.value = ''; }
+  else if (e.key === 'Enter' && results[act]) pickResult(results[act]);
   else if (e.key === 'Escape') { q.value = ''; q.blur(); }
 });
 resEl.addEventListener('mousedown', e => {
   const r = e.target.closest('.res'); if (!r) return;
-  e.preventDefault(); selectCity(results[+r.dataset.i]); q.value = '';
+  e.preventDefault(); pickResult(results[+r.dataset.i]);
 });
 addEventListener('keydown', e => {
   if (document.activeElement === q) return;
@@ -1466,6 +1481,13 @@ function pickISS(px, py, tol) {
   tmpV.copy(issPos).project(camera);
   return Math.hypot((tmpV.x + 1) / 2 * innerWidth - px, (1 - tmpV.y) / 2 * innerHeight - py) < tol;
 }
+function findISS() {
+  issOn = true;
+  $('#bIss').classList.add('on');
+  if (issTrail) issTrail.visible = true;
+  if (issAt(Date.now(), issPos)) { issSprite.visible = true; focusISS(); }
+  else { toast('ISS məlumatı yüklənir…'); loadISSTrack().then(() => { if (issAt(Date.now(), issPos)) { issSprite.visible = true; focusISS(); } else toast('ISS məlumatı alınmadı (internet?)'); }); }
+}
 function focusISS() {
   if (!issSprite.visible) return;
   controls.autoRotate = false;
@@ -1605,6 +1627,58 @@ function checkAlarms() {
   if (changed) saveAlarms();
 }
 
+/* ---------- 9. Sakit musiqi (brauzerdə yaradılır, heç bir fayl yoxdur) ---------- */
+let music = null;
+function startMusic() {
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  const master = ac.createGain(); master.gain.value = 0;
+  const comp = ac.createDynamicsCompressor();
+  const rev = ac.createConvolver();
+  const len = ac.sampleRate * 4, ir = ac.createBuffer(2, len, ac.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5); }
+  rev.buffer = ir;
+  const bus = ac.createGain(), dry = ac.createGain(), wet = ac.createGain();
+  dry.gain.value = 0.5; wet.gain.value = 0.6;
+  bus.connect(dry).connect(master);
+  bus.connect(rev).connect(wet).connect(master);
+  master.connect(comp).connect(ac.destination);
+  master.gain.linearRampToValueAtTime(0.22, ac.currentTime + 4);
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const CHORDS = [[45, 52, 57, 60, 64, 67], [41, 48, 53, 57, 60, 64], [48, 55, 60, 64, 67, 71], [43, 50, 55, 59, 62, 64]];
+  const PENTA = [69, 72, 74, 76, 79, 81, 84];
+  function tone(midi, t, dur, vol, type, cutoff) {
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+    o1.type = o2.type = type; o1.frequency.value = o2.frequency.value = hz(midi); o2.detune.value = 7;
+    f.type = 'lowpass'; f.frequency.value = cutoff;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.35); g.gain.linearRampToValueAtTime(0, t + dur);
+    o1.connect(f); o2.connect(f); f.connect(g).connect(bus);
+    o1.start(t); o2.start(t); o1.stop(t + dur + 0.1); o2.stop(t + dur + 0.1);
+  }
+  let ci = 0;
+  const BAR = 9;
+  const chord = () => { if (document.hidden) return; const t = ac.currentTime + 0.1; CHORDS[ci++ % CHORDS.length].forEach((m, i) => tone(m, t + i * 0.12, BAR + 3, i === 0 ? 0.07 : 0.045, 'triangle', 900)); };
+  const sparkle = () => { if (!document.hidden) tone(PENTA[Math.floor(Math.random() * PENTA.length)], ac.currentTime + 0.05, 4.5, 0.03, 'sine', 3000); t2 = setTimeout(sparkle, 2500 + Math.random() * 4000); };
+  chord();
+  const t1 = setInterval(chord, BAR * 1000);
+  let t2 = setTimeout(sparkle, 3000);
+  music = {
+    ac,
+    stop() {
+      clearInterval(t1); clearTimeout(t2);
+      const n = ac.currentTime;
+      master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(master.gain.value, n); master.gain.linearRampToValueAtTime(0, n + 1.5);
+      setTimeout(() => ac.close(), 1700);
+    }
+  };
+}
+function setMusic(on) {
+  if (on && !music) startMusic();
+  if (!on && music) { music.stop(); music = null; }
+  $('#bMus').classList.toggle('on', on);
+  try { localStorage.setItem('ds_music', on ? '1' : '0'); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (music) (document.hidden ? music.ac.suspend() : music.ac.resume()); });
+
 /* ---------- hər kadr ---------- */
 function featuresFrame(now, dt) {
   if (playing) { let h = timeOffset / 3600000 + dt * 0.5; if (h > 48) h = -48; setOffset(h, true); }
@@ -1634,14 +1708,8 @@ function initFeatures() {
   $('#bIss').onclick = () => {
     // Görünmürsə: göstər və ora uç. Artıq ekranda görünürsə: gizlət.
     const inView = issOn && issSprite.visible && !occluded(issPos);
-    if (inView) { issOn = false; issSprite.visible = false; }
-    else {
-      issOn = true;
-      if (issAt(Date.now(), issPos)) { issSprite.visible = true; focusISS(); }
-      else toast('ISS məlumatı hələ yüklənməyib — bir neçə saniyə sonra yenidən basın');
-    }
-    $('#bIss').classList.toggle('on', issOn);
-    if (issTrail) issTrail.visible = issOn;
+    if (inView) { issOn = false; issSprite.visible = false; $('#bIss').classList.remove('on'); if (issTrail) issTrail.visible = false; }
+    else findISS();
   };
   $('#bAur').onclick = () => { auroraOn = !auroraOn; $('#bAur').classList.toggle('on', auroraOn); aurora.visible = auroraOn; };
   $('#bAlarm').onclick = () => { $('#alarmsModal').classList.toggle('show'); renderAlarms(); };
@@ -1653,6 +1721,8 @@ function initFeatures() {
   tRange.addEventListener('input', () => setOffset(+tRange.value));
   $('#tNow').onclick = () => { playing = false; $('#tPlay').classList.remove('on'); $('#tPlay').innerHTML = PLAY_SVG; setOffset(0); };
   $('#tPlay').onclick = () => { playing = !playing; $('#tPlay').classList.toggle('on', playing); $('#tPlay').innerHTML = playing ? PAUSE_SVG : PLAY_SVG; if (!playing) tick(true); };
+  $('#bMus').onclick = () => { setMusic(!music); if (music) toast('🎵 Sakit musiqi açıldı'); };
+  try { if (localStorage.getItem('ds_music') === '1') addEventListener('pointerdown', () => { if (!music) setMusic(true); }, { once: true }); } catch {}
   renderAlarms(); renderKp(); updTimeLbl();
   loadKp(); setInterval(loadKp, 15 * 60000);
   loadISSTrack(); loadISSInfo(); setInterval(loadISSTrack, 4 * 60000); setInterval(loadISSInfo, 20000);

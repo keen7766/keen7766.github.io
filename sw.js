@@ -1,5 +1,5 @@
 // LiveE — oflayn işləmə üçün service worker
-const CACHE = 'livee-v3';
+const CACHE = 'livee-v4';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 // Canlı məlumat verən xidmətlər keşlənmir (həmişə internetdən)
 const LIVE = /open-meteo\.com|wheretheiss\.at|swpc\.noaa\.gov/;
@@ -26,7 +26,7 @@ self.addEventListener('fetch', e => {
   // Öz fayllarımız: əvvəlcə internet, olmasa keş
   if (url.origin === location.origin) {
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
         .catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
     );
