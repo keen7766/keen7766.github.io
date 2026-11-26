@@ -1,8 +1,8 @@
 // LiveE — oflayn işləmə üçün service worker
-const CACHE = 'livee-v4';
+const CACHE = 'livee-v5';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 // Canlı məlumat verən xidmətlər keşlənmir (həmişə internetdən)
-const LIVE = /open-meteo\.com|wheretheiss\.at|swpc\.noaa\.gov/;
+const LIVE = /open-meteo\.com|wheretheiss\.at|swpc\.noaa\.gov|clouds\.matteason\.co\.uk/;
 
 self.addEventListener('install', e => {
   self.skipWaiting();

@@ -831,7 +831,7 @@ function makeClouds(tex) {
     fragmentShader: `uniform sampler2D tex;uniform vec3 sunDir;varying vec2 vUv;varying vec3 vN;
       void main(){vec4 t=texture2D(tex,vUv);float a=t.a*t.r;float d=dot(normalize(vN),sunDir);float lit=smoothstep(-0.12,0.35,d);
         vec3 col=mix(vec3(0.02,0.03,0.06),vec3(1.0),lit)+vec3(1.0,0.45,0.15)*exp(-pow(d*7.0,2.0))*0.25;
-        gl_FragColor=vec4(col,a*mix(0.28,0.82,lit));}`,
+        gl_FragColor=vec4(col,a*mix(0.10,0.45,lit));}`,
     transparent: true, depthWrite: false
   });
   clouds = new THREE.Mesh(new THREE.SphereGeometry(1.007, 128, 128), m);
@@ -1209,7 +1209,6 @@ function frame(now) {
   controls.zoomSpeed = clamp((dist - 1) * 0.35, 0.25, 0.9);
   if (controls.enabled) controls.update();
 
-  if (clouds) clouds.rotation.y += dt * 0.0045;
   stars.material.uniforms.uT.value = now / 1000;
 
   if (selected) {
@@ -1751,7 +1750,16 @@ Promise.all([
   earthUniforms.waterTex.value = water;
   $('#loader').classList.add('hide');
   flyTo(HOME_DIR, HOME_DIST, 2800);
-  loadTex([TJ + 'earth_clouds_2048.png', TJ + 'earth_clouds_1024.png']).then(makeClouds).catch(() => {});
+  /* real buludlar: peyk şəkli, bir neçə saatdan bir yenilənir; alınmasa, sadə buludlar */
+  const loadLiveClouds = () => loadTex([
+    'https://clouds.matteason.co.uk/images/2048x1024/clouds-alpha.png?h=' + Math.floor(Date.now() / 3600000),
+    TJ + 'earth_clouds_2048.png', TJ + 'earth_clouds_1024.png'
+  ]).then(t => {
+    if (clouds) { const old = clouds.material.uniforms.tex.value; clouds.material.uniforms.tex.value = t; if (old && old !== t) old.dispose(); }
+    else makeClouds(t);
+  }).catch(() => {});
+  loadLiveClouds();
+  setInterval(loadLiveClouds, 60 * 60000);
 }).catch(() => {
   $('#ldTxt').textContent = 'Teksturalar yüklənmədi — internet bağlantısını yoxlayın.';
 });
