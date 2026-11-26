@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.keen7766.investweb",
+        "sha256_cert_fingerprints": ["EC:48:97:AE:4B:C4:E5:FF:AE:8E:5F:8B:A0:32:46:7E:7F:6C:50:7F:B0:94:34:EC:59:DE:5B:63:2A:E3:1D:E8"]
+      }
+    }]
